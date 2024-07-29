@@ -1,0 +1,4 @@
+apiVersion: v1
+baseDomain: testing
+metadata:
+  name: CRC.xxx

@@ -1,0 +1,44 @@
+{
+    "SCHEDULER_JOBSTORES": {
+        "default": {
+        "type": "sqlalchemy",
+        "url": "sqlite:///jobs.sqlite"
+        }
+    },
+    "SCHEDULER_API_ENABLED": true,
+    "SCHEDULER_TIMEZONE": "UTC",
+    "SCHEDULER_EXECUTORS": {
+        "default": {
+            "type": "threadpool",
+            "max_workers": 5
+        }
+    },
+    "SCHEDULER_JOB_DEFAULTS": {
+        "coalesce": false,
+        "max_instances": 3
+    },
+    "JOBS": [
+        {
+            "id": "job1",
+            "func": "app:job1",
+            "args": [
+                1,
+                2
+            ],
+            "trigger": "interval",
+            "seconds": 15,
+            "replace_existing": true
+        },
+        {
+            "id": "job2",
+            "func": "app:job2",
+            "args": [
+                1,
+                2
+            ],
+            "trigger": "interval",
+            "seconds": 15,
+            "replace_existing": true
+        }
+    ]
+}

@@ -1,0 +1,13 @@
+{% extends "layout.html" %}
+
+{% block title %}Flask App - Block 1{% endblock %}
+
+{% block head %}
+    {{ super() }}
+{% endblock %}
+
+{% block content %}
+<div>
+    {% include 'osc.local.html' %}
+</div>
+{% endblock %}

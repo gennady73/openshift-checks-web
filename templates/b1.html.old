@@ -1,0 +1,19 @@
+{% extends "layout.html" %}
+
+{% block title %}Flask App - Block 1{% endblock %}
+
+{% block head %}
+  {{ super() }}
+{% endblock %}
+
+{% block content %}
+<header>
+<div class="toolbar-pf-actions">
+    <h2>Last check results</h2>
+    <h5>Loading from content from osc.local.html?json=osc.json</h5>
+</div>
+</header>
+<div>
+    {% include 'osc.local.html' %}
+</div>
+{% endblock %}
