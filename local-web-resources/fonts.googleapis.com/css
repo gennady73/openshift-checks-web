@@ -1,0 +1,6 @@
+@font-face {
+  font-family: 'Overpass';
+  font-style: normal;
+  font-weight: 400;
+  src: url(local-web-resources/fonts.gstatic.com/s/overpass/v13/qFda35WCmI96Ajtm83upeyoaX6QPnlo6_PPbPpqP.ttf) format('truetype');
+}

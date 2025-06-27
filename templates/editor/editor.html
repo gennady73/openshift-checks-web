@@ -1,0 +1,221 @@
+{% extends 'editor/base.html' %}
+{% from 'editor/_macros.html' import render_dir_tree %}
+<head>
+    <link rel="stylesheet" type="text/css" href="{{ url_for('flaskcode.static', filename='vendor/bootstrap/css/bootstrap.min.css') }}" />
+</head>
+
+{% block content_special_nested %}
+<div role="tabpanel" class="tab-pane active" id="settings">
+    </br>
+    <div class="toolbar-pf-actions">
+        <nav id="nav2">
+            <form id="async-form" action="/async-task" method="post" style="display:inline;">
+                <button type="submit" onclick="showLoading();" class="btn btn-primary" disabled>Add new job(old)</button>
+                <span id="loading-icon" class="loading-icon">
+                        <img src="{{ url_for('static', filename='loading-small.jpg') }}" alt="Loading..">
+                    </span>
+            </form>
+            <!-- trigger modal for creating a new job -->
+            <button type="button" class="btn btn-primary" id="createJob" name="createJob" data-toggle="modal" data-target="#myModal">
+                Add new job(modal)
+            </button>
+            <button type="button" class="btn btn-primary"  id="editJob" name="editJob" data-toggle="modal" data-target="#myModal" disabled>
+                Edit job(modal)
+            </button>
+            <button type="button" class="btn btn-primary" id="deleteJobs" name="deleteJobs" data-toggle="modal" data-target="#myModalDelete" disabled>
+                Delete job(modal)
+            </button>
+        </nav>
+        <div id="notification" class="notification">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        {% if category == "success" %}
+                            <div class="alert alert-info">{{ message }}</div>
+                            <script>
+                            $(document).ready(function () {
+                                //debugger;
+                                console.log("action success: ", $('#myModalForm input#job_action_id').val());
+                                $('#myModalForm input#job_action_id').val('read');
+                                console.log("action set to default: ", $('#myModalForm input#job_action_id').val());
+                            });
+                            </script>
+                        {% else %}
+                            <div class="alert alert-{{ category }}">{{ message }}</div>
+                            <script>
+                            $(document).ready(function () {
+                                //debugger;
+                                console.log("action error : ", $('#myModalForm input#job_action_id').val());
+                                $('#myModalForm input#job_action_id').val('read');
+                                console.log("action set to default: ", $('#myModalForm input#job_action_id').val());
+                            });
+                            </script>
+                        {% endif %}
+                    {% endfor %}
+                    <script>
+                        $('#notification').fadeOut(5000);
+                    </script>
+                {% endif %}
+            {% endwith %}
+        </div>
+    </div>
+</div>
+
+<script src="{{ url_for('static_ext2_blueprint.static',
+            filename='cdnjs.cloudflare.com/ajax/libs/jquery/3.6.4/jquery.min.js') }}"></script>
+<!-- Assets for a modal for creating a new job -->
+<script src="{{ url_for('static_ext2_blueprint.static',
+        filename='cdnjs.cloudflare.com/ajax/libs/bootstrap-timepicker/0.5.2/js/bootstrap-timepicker.min.js') }}">
+</script>
+
+<!-- Assets for a modal for creating a new job -->
+{#
+<script src="{{ url_for('static_ext2_blueprint.static',
+        filename='cdnjs.cloudflare.com/ajax/libs/bootstrap-validator/0.5.2/js/bootstrapValidator.min.js') }}">
+</script> #}
+
+<script src="{{ url_for('static_ext2_blueprint.static',
+        filename='cdnjs.cloudflare.com/ajax/libs/bootstrap-validator/0.11.9/js/validator.min.js') }}">
+</script>
+
+<script src="{{ url_for('static_ext2_blueprint.static',
+            filename='cdnjs.cloudflare.com/ajax/libs/flat-ui/1.1.0/js/bootstrap-tooltip.js') }}">
+</script>
+
+
+<style>
+        .input-group-addon.label-span {
+            text-align: left;
+            padding: 6px 12px;
+            min-width: 130px;
+            max-width: 200px;
+        }
+        .input-small {
+          min-width: 25px;
+          max-width: 75px;
+          margin-left:10px;
+          margin-right:5px;
+        }
+        .input-small-fixed {
+          min-width: 55px;
+          max-width: 55px;
+          margin-left:10px;
+          margin-right:5px;
+        }
+        .wizard-pf-row {
+            height: auto;
+        }
+
+
+</style>
+
+
+{% endblock content_special_nested %}
+
+{% block content %}
+<!-- <h1>Editor</h1> -->
+<div id="content">
+
+    <!--Modals-->
+    <div id="fileNameModal" class="modal fade" tabindex="-1" role="dialog" aria-labelledby="fileNameModalLabel">
+        <div class="modal-dialog modal-md" role="document">
+            <div class="modal-content">
+                <form id="fileNameForm" method="post">
+                    <input type="hidden" id="base_url" name="base_url" value="" />
+                    <input type="hidden" id="base_path_name" name="base_path_name" value="" />
+                    <div class="modal-header">
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                        <h4 class="modal-title" id="fileNameModalLabel">Create New File</h4>
+                    </div>
+                    <div class="modal-body">
+                        <div class="row">
+                            <div class="col-md-12">
+                                <div class="form-group">
+                                    <label for="new_filename" class="control-label">New File:</label>
+                                    <div class="input-group">
+                                        <div class="input-group-addon"><span class="base-path-name"></span>/</div>
+                                        <input type="text" class="form-control" id="new_filename" name="new_filename" placeholder="New File Name" required />
+                                    </div>
+                                    <span class="form-msg" class="help-block"></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                        <button type="submit" class="btn btn-primary" data-loading-text="Loading...">Create</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    <!--/Modals-->
+
+    <div id="page-row" class="row">
+        <div id="flaskcode-list" class="col-md-2 col-sm-3 col-xs-3">
+            <!-- <h4 style="white-space:nowrap;"><i class="fa fa-folder" aria-hidden="true"></i> {{ dirname|truncate(20) }}</h4> -->
+            <div class="list-header well well-sm mb-0"><i class="fa fa-folder" aria-hidden="true"></i> {{ dirname|truncate(20) }}</div>
+            <div class="list-container">
+                {{ render_dir_tree(dtree, 'dir-tree') }}
+            </div>
+        </div>
+        <div id="flaskcode-content" class="col-md-10 col-sm-9 col-xs-9">
+            <div id="editor-header" class="editor-header well well-sm mb-0">
+                <!-- <strong><i class="fa fa-code" aria-hidden="true"></i> {{ app_title }}</strong> -->
+                &nbsp;
+                <span id="resource-info">
+                    <a href="javascript:void(0);" id="resource-close" class="text-danger" title="Close" style="display:none;"><i class="fa fa-window-close" aria-hidden="true"></i></a>
+                    <span id="resource-name" title=""></span>
+                    <i id="resource-mod" class="text-danger fa fa-asterisk" aria-hidden="true" style="display:none;"></i>
+                </span>
+                <span class="pull-right hidden-xs" id="header-action-group">
+                    <a href="javascript:void(0);" class="header-actions" data-action-id="save" title="Save"><span class="badge badge-primary"><i class="fa fa-save" aria-hidden="true"></i> Save</span></a>
+                    &nbsp;|&nbsp;
+                    <a href="javascript:void(0);" class="header-actions" data-action-id="reload" title="Reload"><span class="badge badge-primary"><i class="fa fa-refresh" aria-hidden="true"></i> Reload</span></a>
+                    &nbsp;|&nbsp;
+                    <a href="javascript:void(0);" class="header-actions" data-action-id="force-reload" title="Force Reload"><span class="badge badge-danger"><i class="fa fa-retweet" aria-hidden="true"></i></span></a>
+                    &nbsp;|&nbsp;
+                    <a href="javascript:void(0);" id="toggle-minimap" title="Toggle Minimap"><span class="badge badge-primary"><i class="fa fa-th-list" aria-hidden="true"></i></span></a>
+                </span>
+            </div>
+            <!-- Editor Widget -->
+            <div id="editor-container" class="editor-container{% if editor_theme == 'vs' %} light-theme{% endif %}">
+                <div class="editor-preloader" style="display:none;">
+                    <div class="loading-center">
+                        <div class="loading-center-absolute">Requesting...</div>
+                    </div>
+                </div>
+                <div class="editor-notification text-center"></div>
+                <div class="editor-body">
+                    <div class="editor-body-msg">
+                        <h2 class="text-center text-info"><i class="fa fa-code" aria-hidden="true"></i> {{ app_title }}</h2>
+                    </div>
+                </div>
+            </div>
+            <!-- /Editor Widget -->
+        </div>
+    </div>
+{% endblock %}
+
+{% block page_styles %}
+<link rel="stylesheet" type="text/css" href="{{ url_for('flaskcode.static', filename='vendor/font-awesome/css/font-awesome.min.css') }}" />
+<link rel="stylesheet" type="text/css" href="{{ url_for('flaskcode.static', filename='vendor/jquery-contextMenu/jquery.contextMenu.min.css') }}" />
+<link rel="stylesheet" type="text/css" href="{{ url_for('flaskcode.static', filename='vendor/treed/treed.css') }}" />
+<link rel="stylesheet" type="text/css" href="{{ url_for('flaskcode.static', filename='css/styles.css') }}" />
+{% endblock %}
+
+{% block page_scripts %}
+<script type="text/javascript" src="{{ url_for('flaskcode.static', filename='vendor/jquery-contextMenu/jquery.contextMenu.min.js') }}"></script>
+<script type="text/javascript" src="{{ url_for('flaskcode.static', filename='vendor/monaco-editor/min/vs/loader.js') }}"></script>
+<script type="text/javascript" src="{{ url_for('flaskcode.static', filename='vendor/treed/treed.js') }}"></script>
+<script type="text/javascript" src="{{ url_for('flaskcode.static', filename='js/objects.js') }}"></script>
+<script type="text/javascript">
+flaskcode.config.set('pluginsBaseUrl', "{{ url_for('flaskcode.static', filename='vendor') }}");
+flaskcode.config.set('updateResourceBaseUrl', "{{ url_for('flaskcode.update_resource_data', file_path='') }}");
+flaskcode.config.set('resourceUrlTemplate', "{{ url_for('flaskcode.resource_data', file_path='__pathname__') }}");
+flaskcode.config.set('editorTheme', "{{ editor_theme }}");
+</script>
+<script type="text/javascript" src="{{ url_for('flaskcode.static', filename='js/flaskcode.js') }}"></script>
+
+</div>
+{% endblock %}

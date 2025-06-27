@@ -1,0 +1,76 @@
+{% extends 'schedule/base.html' %}
+
+{% block title %}Job #{{ job_id }} info{% endblock %}
+
+{% block content_special_nested %}
+    <div role="tabpanel" class="tab-pane active" id="settings">
+        </br>
+        <div class="toolbar-pf-actions">
+            <nav id="nav2">
+                <form id="async-form" action="/async-task" method="post" style="display:inline;">
+                    <a href="{{ url_for('scheduler.scheduler_home') }}" class="btn btn-primary">Back to list</a>
+<!--                    <button type="submit" onclick="showLoading();" class="btn btn-primary">Back to list</button>-->
+<!--                    <span id="loading-icon" class="loading-icon">-->
+<!--                        <img src="{{ url_for('static', filename='loading-small.jpg') }}" alt="Loading..">-->
+<!--                    </span>-->
+                </form>
+            </nav>
+            <div id="notification" class="notification">
+                {% with messages = get_flashed_messages() %}
+                    {% if messages %}
+                        {% for message in messages %}
+                            <div class="flash-{{ message[1] }}">{{ message }}</div>
+                        {% endfor %}
+                    {% endif %}
+                {% endwith %}
+            </div>
+        </div>
+    </div>
+{% endblock content_special_nested %}
+
+{% block content %}
+  <h1>Job id:{{ job_id }} name: {{ job.name }}</h1>
+  Func: {{ job.func }}<br>
+  Trigger: {{ job.trigger }}<br>
+  Jobstore: {{ jobstore }}<br>
+  Runs:
+  <ul>
+    <li>Total: {{ job_runs or "" }}</li>
+    <li>Failed: {{ job_fails or "" }}</li>
+  </ul>
+
+  {% if log %}
+    <h2>Log of last runs (max. {{ max_log_entries }} entries):</h2>
+    <table border=0 class="table table-striped table-bordered table-hover">
+      <thead>
+        <th class=run_time>schedule run time</th>
+        <th class=exception>exception</th>
+        <th class=traceback>traceback</th>
+      </thead>
+      <tbody>
+        {% for entry in log %}
+          <tr>
+            <td>
+              {% if entry.exception %}
+              <span class="pficon pficon-error-circle-o" title="failed" style="color: "></span>
+              {% else %}
+              <span class="pficon pficon-info" title="info" style="color: blue"></span>
+              {% endif %}
+              {{ entry.scheduled_run_time }}
+            </td>
+            <td>{{ entry.exception or "" }}</td>
+            <td>
+              {% if entry.exception %}
+                {% for line in entry.traceback.split('\n') %}
+                  {{ line }}<br>
+                {% endfor %}
+                {% else %}
+                  executed successfully
+              {% endif %}
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% endif %}
+{% endblock %}

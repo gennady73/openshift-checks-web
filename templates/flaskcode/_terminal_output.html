@@ -1,0 +1,8 @@
+{% if command %}
+    <pre style="color: white; margin:0; border:0;background-color:black; font-weight:normal; font-size:13px;">&gt;{{ command }}</pre>
+    {% if error %}
+        <pre style="color: red; margin:0; border:0;background-color:black; font-weight:normal; font-size:13px;">{{ result }}</pre>
+    {% else %}
+        <pre style="color: white; margin:0; border:0;background-color:black; font-weight:normal; font-size:13px;">{{ result }}</pre>
+    {% endif %}
+{% endif %}

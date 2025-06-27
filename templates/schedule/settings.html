@@ -1,0 +1,85 @@
+{% extends 'schedule/base.html' %}
+
+<main>
+{% block content_special_nested %}
+    <div role="tabpanel" class="tab-pane active" id="settings">
+        </br>
+        <div class="toolbar-pf-actions">
+            <nav id="nav2">
+                <form id="async-form" action="/async-task" method="post" style="display:inline;">
+                    <button type="submit" onclick="showLoading();" class="btn btn-primary">Edit scheduler settings</button>
+                    <span id="loading-icon" class="loading-icon">
+                        <img src="{{ url_for('static', filename='loading-small.jpg') }}" alt="Loading..">
+                    </span>
+                </form>
+            </nav>
+            <div id="notification" class="notification">
+                {% with messages = get_flashed_messages() %}
+                    {% if messages %}
+                        {% for message in messages %}
+                            <div class="flash-{{ message[1] }}">{{ message }}</div>
+                        {% endfor %}
+                    {% endif %}
+                {% endwith %}
+            </div>
+        </div>
+    </div>
+{% endblock content_special_nested %}
+
+{% block content %}
+<!--  <h1>Settings</h1>-->
+  <p>Customize your scheduler settings here.</p>
+  <!-- Add your settings content here -->
+<!--<main style="padding-left: 20px; padding-right: 20px;">-->
+    <div id="content">
+
+        <div class="panel-default">
+            <table id="state_scheduler_table" class="table table-condensed">
+                <thead>
+                <tr id="state_scheduler_table_header">
+                  <th>Property</th>
+                  <th>State</th>
+                  <th>Action</th>
+                </tr>
+                </thead>
+                <tbody id=state_scheduler_table_body" style>
+                        <tr>
+                            <td><div>allowed hosts:</div></td>
+                            <td>
+                                {% for allowed_host in scheduler_state.allowed_hosts %}
+                                    <div>{{ allowed_host }}</div>
+                                {% endfor %}
+                            </td>
+                            <td></td>
+                        </tr>
+                        <tr>
+                            <td><div>current host:</div></td>
+                            <td><div>{{ scheduler_state.current_host }}</div></td>
+                            <td></td>
+                        </tr>
+                        <tr>
+                            <td><div>running:</div></td>
+                            <td><div>{{ scheduler_state.running }}</div></td>
+                            <td>
+                                {% if scheduler_state.paused %}
+                                <a href="{{ url_for('scheduler.scheduler_action', action_id='scheduler_start') }}"
+                                   title="resumes job processing in the scheduler." >Resume All</a>
+                                {% else %}
+                                <a href="{{ url_for('scheduler.scheduler_action', action_id='scheduler_stop') }}"
+                                   title="pauses job processing in the scheduler.">Pause All</a>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% for key, value in config_data.items() %}
+                        <tr>
+                            <td>{{ key }} </td>
+                            <td> {{ value }}</td>
+                            <td></td>
+                        </tr>
+                        {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+{% endblock %}
+</main>

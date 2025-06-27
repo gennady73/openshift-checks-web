@@ -1,0 +1,41 @@
+{% extends "layout.html" %}
+
+{% block head %}
+  {{ super() }}
+{% endblock %}
+
+<main>
+{% block content_special %}
+<!-- TAB NAV BEGIN -->
+<div style="padding-top: 65px;">
+  <!-- Nav tabs -->
+  <ul class="nav nav-tabs" role="navigation">
+<!--    <li role="navigation" {% if active_tab2=="JobList" %}class="active"{% endif %}>-->
+<!--        <a href="{{ url_for('scheduler.scheduler_jobs') }}" role="tab">Job List</a>-->
+<!--    </li>-->
+<!--    <li role="navigation" {% if active_tab2=="Settings" %}class="active"{% endif %}>-->
+<!--        <a href="{{ url_for('scheduler.scheduler_settings') }}" role="tab">Settings</a>-->
+<!--    </li>-->
+  </ul>
+
+  <!-- Tab panes -->
+  <div class="tab-content">
+    {% block content_special_nested %}
+    <div role="tabpanel" class="tab-pane active" id="home">...</div>
+    <div role="tabpanel" class="tab-pane" id="profile">...</div>
+    <div role="tabpanel" class="tab-pane" id="messages">...</div>
+    <div role="tabpanel" class="tab-pane" id="settings">...</div>
+    {% endblock content_special_nested %}
+  </div>
+
+</div>
+<!-- TAB NAV END -->
+{% endblock content_special %}
+
+{% block content %}
+<main style="padding-left: 20px; padding-right: 20px;">
+    <div id="content">
+        <div class="panel-default"></div>
+    </div>
+</main>
+{% endblock content %}

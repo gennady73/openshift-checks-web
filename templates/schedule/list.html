@@ -1,0 +1,753 @@
+{% extends 'schedule/base.html' %}
+
+{% block content_special_nested %}
+<div role="tabpanel" class="tab-pane active" id="settings">
+    </br>
+    <div class="toolbar-pf-actions">
+        <nav id="nav2">
+            {# <form id="async-form" action="/async-task" method="post" style="display:inline;">
+                <button type="submit" onclick="showLoading();" class="btn btn-primary" disabled>Add new job(old)</button>
+                <span id="loading-icon" class="loading-icon">
+                        <img src="{{ url_for('static', filename='loading-small.jpg') }}" alt="Loading..">
+                    </span>
+            </form> #}
+            <!-- trigger modal for creating a new job -->
+            <button type="button" class="btn btn-primary" id="createJob" name="createJob" data-toggle="modal" data-target="#myModal">
+                Add new job
+            </button>
+            <button type="button" class="btn btn-primary"  id="editJob" name="editJob" data-toggle="modal" data-target="#myModal" disabled>
+                Edit job
+            </button>
+            <button type="button" class="btn btn-primary" id="deleteJobs" name="deleteJobs" data-toggle="modal" data-target="#myModalDelete" disabled>
+                Delete job
+            </button>
+        </nav>
+        <div id="notification" class="notification">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        {% if category == "success" %}
+                            <div class="alert alert-info">{{ message }}</div>
+                            <script>
+                            $(document).ready(function () {
+                                //debugger;
+                                console.log("action success: ", $('#myModalForm input#job_action_id').val());
+                                $('#myModalForm input#job_action_id').val('read');
+                                console.log("action set to default: ", $('#myModalForm input#job_action_id').val());
+                            });
+                            </script>
+                        {% else %}
+                            <div class="alert alert-{{ category }}">{{ message }}</div>
+                            <script>
+                            $(document).ready(function () {
+                                //debugger;
+                                console.log("action error : ", $('#myModalForm input#job_action_id').val());
+                                $('#myModalForm input#job_action_id').val('read');
+                                console.log("action set to default: ", $('#myModalForm input#job_action_id').val());
+                            });
+                            </script>
+                        {% endif %}
+                    {% endfor %}
+                    <script>
+                        $('#notification').fadeOut(5000);
+                    </script>
+                {% endif %}
+            {% endwith %}
+        </div>
+    </div>
+</div>
+
+<script src="{{ url_for('static_ext2_blueprint.static',
+            filename='cdnjs.cloudflare.com/ajax/libs/jquery/3.6.4/jquery.min.js') }}"></script>
+<!-- Assets for a modal for creating a new job -->
+<script src="{{ url_for('static_ext2_blueprint.static',
+        filename='cdnjs.cloudflare.com/ajax/libs/bootstrap-timepicker/0.5.2/js/bootstrap-timepicker.min.js') }}">
+</script>
+
+<!-- Assets for a modal for creating a new job -->
+{#
+<script src="{{ url_for('static_ext2_blueprint.static',
+        filename='cdnjs.cloudflare.com/ajax/libs/bootstrap-validator/0.5.2/js/bootstrapValidator.min.js') }}">
+</script> #}
+
+<script src="{{ url_for('static_ext2_blueprint.static',
+        filename='cdnjs.cloudflare.com/ajax/libs/bootstrap-validator/0.11.9/js/validator.min.js') }}">
+</script>
+
+<script src="{{ url_for('static_ext2_blueprint.static',
+            filename='cdnjs.cloudflare.com/ajax/libs/flat-ui/1.1.0/js/bootstrap-tooltip.js') }}">
+</script>
+
+
+<style>
+        .input-group-addon.label-span {
+            text-align: left;
+            padding: 6px 12px;
+            min-width: 130px;
+            max-width: 200px;
+        }
+
+        .input-small-fixed-2 .input-small {
+          min-width: 25px;
+          max-width: 75px;
+          margin-left:10px;
+          margin-right:5px;
+          width: auto;
+        }
+
+        .input-small-fixed {
+          min-width: 55px;
+          max-width: 55px;
+          margin-left:10px;
+          margin-right:5px;
+        }
+        .wizard-pf-row {
+            height: auto;
+        }
+
+
+</style>
+
+<form id="myModalDeleteForm" data-toggle="validator" role="form" action="{{ url_for('scheduler.scheduler_jobs') }}" method="POST">
+    <!-- A modal for deleting an existing job -->
+    <div class="modal fade" id="myModalDelete" tabindex="-1" role="dialog" aria-labelledby="myModalDeleteLabel">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Cancel"><span
+                            aria-hidden="true">&times;</span></button>
+                    <h4 class="modal-title" id="myModalDeleteLabel">Delete scheduler job</h4>
+                </div>
+                <div class="modal-message alert alert-warning">The job(s) will be deleted!</div>
+                <div class="modal-body">
+
+                    <div class="form-group">
+
+<!--                        <label for="delete-job-name" class="control-label">job name-->
+<!--                            &lt;!&ndash; the help icon and tooltip &ndash;&gt;-->
+<!--                            <span class="pficon pficon-info" data-toggle="tooltip" data-placement="right"-->
+<!--                                  title="The job name to delete"></span>-->
+<!--                        </label>-->
+<!--                        <label for="delete-job-name" class="control-label">Delete All jobs? </label>-->
+
+                        <input type="hidden" class="form-control" id="delete-job-name" name="job-name"
+                               placeholder="job name"
+                               aria-describedby="delete-job-name-label"
+                               data-error="The job name is empty!" data-minlength="3" tabindex="-1" readonly>
+<!--                        <div class="help-block with-errors">The job name to delete</div>-->
+
+<!--                        <label for="delete-job-jobstore" class="control-label">jobstore-->
+<!--                            &lt;!&ndash; the help icon and tooltip &ndash;&gt;-->
+<!--                            <span class="pficon pficon-info" data-toggle="tooltip" data-placement="top"-->
+<!--                                  title="The jobstore to delete from"></span>-->
+<!--                        </label>-->
+                        <input type="hidden" class="form-control" id="delete-job-jobstore" name="jobstore"
+                               placeholder="job jobstore"
+                               aria-describedby="delete-job-jobstore-label"
+                               data-error="The job jobstore is empty!" data-minlength="3" tabindex="-1" readonly value="default">
+<!--                        <div class="help-block with-errors">The jobstore to delete from</div>-->
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <input type="hidden" class="form-control" name="action_id" value="delete">
+                    <button type="button" class="btn btn-default" id="cancelJobDeleteBtn" data-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary" id="jobDeleteBtn" form="myModalDeleteForm">Ok</button>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</form>
+
+<form id="myModalForm" data-toggle="validator" role="form" action="{{ url_for('scheduler.scheduler_jobs') }}" method="POST">
+    <!-- A modal for creating a new job -->
+    <div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span
+                            aria-hidden="true">&times;</span></button>
+                    <h4 class="modal-title" id="myModalLabel">New scheduler job</h4>
+                </div>
+                <div class="modal-message"></div>
+                <div class="modal-body">
+
+                    <div class="form-group">
+                        <label for="new-job-name" class="control-label">job name
+                            <!-- the help icon and tooltip -->
+                            <span class="pficon pficon-info" data-toggle="tooltip" data-placement="top"
+                                  title="Enter a new job name"></span>
+                        </label>
+
+                        <input type="text" class="form-control" id="new-job-name" name="new-job-name"
+                               placeholder="job name"
+                               aria-describedby="new-job-name-label"
+                               data-error="The job name is empty!" data-minlength="3" required>
+                        <div class="help-block with-errors">Enter a new job name</div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="new-job-func">function to run
+                            <!-- the help icon and tooltip -->
+                            <span class="pficon pficon-info" data-toggle="tooltip" data-placement="top"
+                                  title="A function name to schedule execution"></span>
+                        </label>
+
+                        <input type="text" class="form-control" id="new-job-func" name="new-job-func" placeholder="job1"
+                               aria-describedby="new-job-func-label"
+                               data-error="The function name is empty!" data-minlength="3" required>
+                        <div class="help-block with-errors">A function name to schedule execution</div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="new-job-jobstore">scheduler jobstore
+                            <!-- the help icon and tooltip -->
+                            <span class="pficon pficon-info" data-toggle="tooltip" data-placement="top"
+                                  title="A storage name for scheduler data"></span>
+                        </label>
+
+                        <input type="text" class="form-control" id="new-job-jobstore" name="new-job-jobstore" placeholder="default"
+                               aria-describedby="new-job-jobstore-label" value="default" readonly
+                               data-error="The jobstore is empty!" data-minlength="3" required>
+                        <div class="help-block with-errors">A storage name for scheduler data</div>
+                    </div>
+
+                    <div class="form-group wizard-pf-row">
+                        <label for="new-job-trigger" style="white-space: nowrap">trigger
+                            <!-- the help icon and tooltip -->
+                            <span class="pficon pficon-info" data-toggle="tooltip" data-placement="top"
+                                  title="A trigger type for scheduler"></span>
+                        </label>
+
+                        <select class="form-control input-small-fixed-22" id="new-job-trigger" name="new-job-trigger"
+                                aria-describedby="new-job-trigger-label"
+                                data-error="The trigger is empty!" data-minlength="3" required style="width:auto">
+                            <option value="" selected></option>
+                            <option value="interval">Interval</option>
+                            <option value="cron">cron</option>
+                        </select>
+                        <div class="help-block with-errors"></div>
+
+                        <div id="interval-time-group" style="display: none;">
+                            <div class="form-group wizard-pf-row" id="trigger-interval-minute">
+                                <label style="white-space: nowrap">
+                                    execute every:
+                                </label>
+
+                                <label for="new-job-trigger-min" style="white-space: nowrap">
+                                    <input type="radio" id="trigger-interval-minute-option"
+                                           name="new-job-trigger-interval-options"
+                                           value="minutes">
+                                    minutes
+                                </label>
+
+                                <select class="form-control input-small-fixed" id="new-job-trigger-min" name="new-job-trigger-min"
+                                        aria-describedby="new-job-trigger-min-label"
+                                        data-error="The number of minutes is empty!" required> <!-- required -->
+                                    <option value="" selected></option>
+                                    <option value=10>10</option>
+                                    <option value=15>15</option>
+                                    <option value=30>30</option>
+                                    <option value=45>45</option>
+                                    <option value=59>59</option>
+                                </select>
+                                <div class="help-block with-errors"></div>
+                            </div>
+
+                            <div class="form-group wizard-pf-row" id="trigger-interval-second">
+                                <label style="white-space: nowrap">
+                                    execute every:
+                                </label>
+
+                                <label for="new-job-trigger-sec" style="white-space: nowrap">
+                                    <input type="radio" name="new-job-trigger-interval-options"
+                                           id="trigger-interval-second-option" value="seconds">
+                                    seconds
+                                </label>
+
+                                <select class="form-control input-small-fixed" id="new-job-trigger-sec"
+                                        name="new-job-trigger-sec"
+                                        aria-describedby="new-job-trigger-sec-label"
+                                        data-error="The number of seconds is empty!" disabled> <!-- required -->
+                                    <option value="" selected></option>
+                                    <option value=15>15</option>
+                                    <option value=30>30</option>
+                                    <option value=45>45</option>
+                                    <option value=59>59</option>
+                                </select>
+                                <div class="help-block with-errors"></div>
+
+                            </div>
+
+                        </div>
+
+                        <div class="wizard-pf-row form-group bootstrap-timepicker" id="time-picker-group" style="display: none;">
+                            <label style="white-space: nowrap">
+                                execute at specified hour of day (24H):
+                            </label>
+
+                            <input id="timepicker-hour" name="timepicker-hour" type="text" class="form-control input-small"
+                                   aria-describedby="timepicker-hour-icon">
+                            <span id="timepicker-hour-icon" class="form-label btn btn-default"
+                                  onclick="$('#timepicker-hour').click()">
+                                <i class="glyphicon glyphicon-time"></i>
+                            </span>
+                        </div>
+
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <input type="hidden" class="form-control" id="job_action_id" name="action_id" value="create">
+                    <button type="button" class="btn btn-default" id="closeNoChangesBtn" data-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-primary" id="saveChangesBtn" data-dismiss="modal">Save changes</button>
+                    <button type="submit" class="hidden" id="submitChangesBtn">Submit changes</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</form>
+<script>
+
+    $(document).ready(function () {
+
+        // Initialize Bootstrap tooltips
+        $('[data-toggle="tooltip"]').tooltip();
+
+        // validate fields
+        //$('#myModalForm').validator();
+
+         $('#myModalForm').change(function () {
+             $('#myModalForm').validator('validate')
+         });
+
+        // Attach change event to radio buttons
+        $('input[name="new-job-trigger-interval-options"]').change(function () {
+        //debugger;
+          // Check which radio button is selected
+          if ($('#trigger-interval-second-option').is(':checked')) {
+            // Show the div if Option 1 is selected
+            $('#new-job-trigger-sec').prop('disabled', false).prop('required', true);
+            $('#new-job-trigger-min').prop('disabled', true).prop('required', false).prop('value','');
+            $('#myModalForm input[name="new-job-trigger-interval-options"]').val('seconds')
+          } else if ($('#trigger-interval-minute-option').is(':checked')) {
+            // Show the div if Option 1 is selected
+            $('#new-job-trigger-sec').prop('disabled', true).prop('required', false).prop('value','');
+            $('#new-job-trigger-min').prop('disabled', false).prop('required', true);
+            $('#myModalForm input[name="new-job-trigger-interval-options"]').val('minutes')
+          } else {
+            //$('#new-job-trigger-min').prop('disabled', true).prop('required', false).prop('value','');
+            //$('#new-job-trigger-sec').prop('disabled', true).prop('required', false).prop('value','');
+          }
+        });
+
+
+        // Trigger field change event
+        $('#new-job-trigger').change(function () {
+            // Get the selected value
+            var selectedTrigger = $(this).val();
+
+            // Toggle visibility based on the selected trigger
+            if (selectedTrigger === 'interval') {
+                $('#interval-time-group').show();
+                $('#time-picker-group').hide();
+            } else if (selectedTrigger === 'cron') {
+                $('#interval-time-group').hide();
+                $('#new-job-trigger-min').prop('disabled', true).prop('required', false).prop('value','');
+                $('#new-job-trigger-sec').prop('disabled', true).prop('required', false).prop('value','');
+                $('#time-picker-group').show();
+            } else {
+                $('#time-picker-group').hide();
+                $('#interval-time-group').hide();
+            }
+        });
+
+        // Initialize Bootstrap Timepicker
+        $('#timepicker-hour').timepicker({
+          showMeridian: false, // Set to true if you want to use AM/PM
+          defaultTime: '00:00', // Set the default time to midnight
+          minuteStep: 5, // Set minute step to 1 for precision
+          template: 'dropdown',
+          icons: {
+            up: 'glyphicon glyphicon-chevron-up',
+            down: 'glyphicon glyphicon-chevron-down'
+          },
+          appendWidgetTo: 'body',
+          disableFocus: true
+        });
+
+        // Handle "Close" button click
+        $('#closeNoChangesBtn').on('click', function () {
+            $('#myModalForm').trigger("reset");
+            $('#myModalForm').validator('destroy');
+            $('#myModalForm input#job_action_id').val('read');
+        });
+
+        // Handle "Save changes" button click
+        $('#saveChangesBtn').on('click', function () {
+
+            // Retrieve input values
+            var jobName = $('#new-job-name').val();
+            var jobFunc = $('#new-job-func').val();
+            var jobJobstore = $('#new-job-jobstore').val();
+            var jobTrigger = $('#new-job-trigger').val();
+            var jobTriggerSec = $('#new-job-trigger-sec').val();
+            var jobTriggerHrs = $('#timepicker-hour').val();
+
+            // Perform any actions with the retrieved values
+            console.log('Job Name:', jobName);
+            console.log('Job Function:', jobFunc);
+            console.log('Job Jobstore:', jobJobstore);
+            console.log('Job Trigger:', jobTrigger);
+            console.log('Job Trigger Seconds:', jobTriggerSec);
+            console.log('Job Trigger Hours:', jobTriggerHrs);
+
+            // Close the modal (optional)
+            // $('#myModal').modal('hide');
+            $('#myModalForm').submit();
+        });
+/*
+        $('#myModalForm').on('valid.bs.validator', function () {
+            // Trigger validation on the form
+            //$('#myModalForm').validator('validate');
+            //alert('val');
+        });
+        $('#myModalForm').on('invalid.bs.validator', function () {
+            // Trigger validation on the form
+            //$('#myModalForm').validator('validate');
+            //alert('inval');
+        });
+ */
+
+        // event listener for form submission
+        $('#myModalForm').on('submit', function (event) {
+        //debugger;
+            // Check the validity of the input before submitting the form
+            // if (!$('#new-job-name').hasClass('is-valid')) {
+            // Prevent form submission if the input is invalid
+            // event.preventDefault();
+            //alert('Invalid input! Please enter a number between 10 and 600.');
+            // return false;
+            //}
+            //return !event.preventDefault();
+            $('#myModalForm').validator('validate');
+            //debugger;
+            // Retrieve input values
+            var jobName = $('#new-job-name').val();
+            var jobFunc = $('#new-job-func').val();
+            var jobJobstore = $('#new-job-jobstore').val();
+            var jobTrigger = $('#new-job-trigger').val();
+            var jobTriggerSec = $('#new-job-trigger-sec').val();
+            var jobTriggerHrs = $('#timepicker-hour').val();
+
+            // Perform any actions with the retrieved values
+            console.log('Job Name:', jobName);
+            console.log('Job Function:', jobFunc);
+            console.log('Job Jobstore:', jobJobstore);
+            console.log('Job Trigger:', jobTrigger);
+            console.log('Job Trigger Seconds:', jobTriggerSec);
+            console.log('Job Trigger Hours:', jobTriggerHrs);
+        });
+
+        // Handle checkbox change event in each row
+        // $('#jobs_scheduler_table tbody tr:first-child td input[type="checkbox"]').prop('checked')
+        // $('#jobs_scheduler_table thead tr:first-child th input[type="checkbox"]').prop('checked')
+//debugger;
+        $('#jobs_scheduler_table tbody').on('change', 'td input[type="checkbox"]', function() {
+            // If not all checkboxes are checked, uncheck the "select all"
+            console.log(">>> table body onchange >>>");
+            //debugger;
+            if (!$(this).prop("checked")) {
+                console.log(">>> table body checked -> unchecked >>>");
+                //$("#selectAll").prop("checked", false);
+                $("#deleteJobs").prop("disabled", true);
+                $("#editJob").prop("disabled", true);
+            }
+            else {
+                console.log(">>> table body unchecked -> checked >>>");
+                //$("#selectAll").prop("checked", true);
+                $("#deleteJobs").prop("disabled", false);
+                $("#editJob").prop("disabled", false);
+            }
+            //debugger;
+            // If all row-level checkboxes are checked, check the "select all" checkbox
+            // if ($('#jobs_scheduler_table tbody input.sr-only:not(:checked)').length == 0) {
+            if ($('#jobs_scheduler_table tbody input:not(:checked)').length == 0) {
+                $("#selectAll").prop("checked", true);
+                $("#deleteJobs").prop("disabled", true);
+                $("#editJob").prop("disabled", true);
+            }
+            else {
+                $("#selectAll").prop("checked", false);
+                $("#deleteJobs").prop("disabled", false);
+                $("#editJob").prop("disabled", true);
+            }
+//debugger;
+            // Custom logic for individual checkbox selection can go here
+            var selectedRows = $('#jobs_scheduler_table tbody :checkbox:checked').closest('tr');
+            if (selectedRows.length === 1) { // Assuming you only want to delete/update one job at a time
+                 $("#createJob").prop("disabled", true);
+                 $("#editJob").prop("disabled", false);
+                 $("#deleteJobs").prop("disabled", false);
+            }
+            else if (selectedRows.length === 0) {
+                $("#createJob").prop("disabled", false);
+                $("#deleteJobs").prop("disabled", true);
+            }
+            else {
+                 $("#createJob").prop("disabled", true);
+                 $("#editJob").prop("disabled", true);
+                 $("#deleteJobs").prop("disabled", true);
+            }
+        });
+
+        $('#jobs_scheduler_table thead').on('change', 'tr:first-child th input[type="checkbox"]', function() {
+            // If not all checkboxes are checked, uncheck the "select all"
+            console.log(">>> table header onchange >>>");
+            if (!$(this).prop("checked")) {
+                console.log(">>> table header checked -> unchecked >>>");
+                $("#selectAll").prop("checked", false);
+                $('#jobs_scheduler_table tbody :checkbox').prop("checked", false);
+                $("#createJob").prop("disabled", false);
+                $("#deleteJobs").prop("disabled", true);
+                $("#editJob").prop("disabled", true);
+            }
+            else {
+                console.log(">>> table header unchecked -> checked >>>");
+                $("#selectAll").prop("checked", true);
+                $('#jobs_scheduler_table tbody :checkbox').prop("checked", true);
+                $("#createJob").prop("disabled", true);
+                $("#deleteJobs").prop("disabled", false);
+                $("#editJob").prop("disabled", true);
+            }
+
+            // If all row-level checkboxes are checked, check the "select all" checkbox
+            // if ($('#jobs_scheduler_table tbody input.sr-only:not(:checked)').length == 0) {
+            //     $("#selectAll").prop("checked", true);
+            // }
+
+            // Custom logic for individual checkbox selection can go here
+            // For example, updating a counter, enabling a button, etc.
+        });
+
+        // Create job action
+        $('#createeJob').click(function() {
+            $('#myModalForm').trigger("reset");
+            $('#myModalForm input#job_action_id').val('create');
+        });
+
+        // Delete job(s) action
+        $('#deleteJobs').click(function() {
+        //debugger;
+            var selectedRows = $('#jobs_scheduler_table tbody :checkbox:checked').closest('tr');
+            if (selectedRows.length === 1) { // Assuming you only want to delete one job at a time
+                var rowData = selectedRows.find(':checkbox').data('json');
+                // Assuming rowData is a JSON string, parse it
+                rowData = rowData.replace(/'/g, '"');
+                rowData = rowData.replace(/True/g, '"True"');
+                rowData = rowData.replace(/False/g, '"False"');
+                rowData = rowData.replace(/None/g, '"None"');
+                var jobData = JSON.parse(rowData);
+                $('#delete-job-name').val(jobData.name);
+                // $('#delete-job-jobstore').val(jobData.jobstore);
+                $('#myModalForm input#job_action_id').val('delete');
+            }
+            else if (selectedRows.length > 1) {
+                //debugger;
+                var jobsDataList = [];
+                for (const selectedRow of selectedRows.find(':checkbox')) {
+                    var rowData = selectedRow.dataset.json;
+                    console.log('row data= %S', rowData);
+                    // Assuming rowData is a JSON string, parse it
+                    rowData = rowData.replace(/'/g, '"');
+                    rowData = rowData.replace(/True/g, '"True"');
+                    rowData = rowData.replace(/False/g, '"False"');
+                    rowData = rowData.replace(/None/g, '"None"');
+                    var jobData = JSON.parse(rowData);
+                    jobsDataList.push(jobData.id);
+                }
+                console.log('jobDataList= %O', jobsDataList);
+                $('#delete-job-name').val(jobsDataList);
+            }
+        });
+
+        // Handle job deletion button
+        $('#jobDeleteBtn').on('click', function () {
+                console.log(">>> DELETE JOB >>>");
+                $('#myModalForm input#job_action_id').val('delete');
+                $('#myModalDeleteForm').submit();
+        });
+
+        // handle myModalDelete on show actions
+        $('#myModalDelete').on('show.bs.modal', function () {
+            //debugger;
+            console.log(">>> ON SHOW DELETE JOB >>>");
+                //$('#myModalDeleteForm button#cancelJobDeleteBtn').addclass('active');
+                //$('#myModalDeleteForm button#jobDeleteBtn').addclass('active');
+                //$('#myModalDeleteForm').focus();
+        });
+
+
+        // Edit job action
+        $('#editJob').click(function() {
+        //debugger;
+            var selectedRows = $('#jobs_scheduler_table tbody :checkbox:checked').closest('tr');
+            if (selectedRows.length === 1) { // Assuming you only want to delete one job at a time
+                var rowData = selectedRows.find(':checkbox').data('json');
+                // Assuming rowData is a JSON string, parse it
+                rowData = rowData.replace(/'/g, '"');
+                rowData = rowData.replace(/True/g, '"True"');
+                rowData = rowData.replace(/False/g, '"False"');
+                rowData = rowData.replace(/None/g, '"None"');
+                var jobData = JSON.parse(rowData);
+                // $('#delete-job-name').val(jobData.name);
+
+                // $('#delete-job-jobstore').val(jobData.jobstore);
+
+                /* fields to initialize
+
+                new-job-name
+                new-job-func
+                new-job-jobstore
+                new-job-trigger (cron|interval)
+                  interval-time-group (interval)
+                    trigger-interval-minute
+                      new-job-trigger-interval-options (minutes)
+                        trigger-interval-minute-option
+                          new-job-trigger-min
+                    trigger-interval-second
+                      new-job-trigger-interval-options (secods)
+                        trigger-interval-second-option
+                          new-job-trigger-sec
+
+                  time-picker-group (cron)
+                    timepicker-hour
+                action_id (edit)
+
+                */
+
+                $('#myModalForm input#new-job-name').val(jobData.name);
+                $('#myModalForm input#new-job-func').val(jobData.func);
+                //$('#myModalForm input#new-job-func-args).val(jobData.args);
+                //$('#myModalForm input#new-job-jobstore).val(jobData.jobstore);
+                $('#myModalForm input#new-job-trigger').val(jobData.trigger);
+
+                if(jobData.trigger == 'interval'){
+                    console.log('initializing an "interval" trigger');
+                    $('#myModalForm select#new-job-trigger').val(jobData.trigger).change();
+                    //debugger;
+                    if(jobData.minutes) {
+                        $('#myModalForm input[name="new-job-trigger-interval-options"]').val('minutes').change();
+                        $('#myModalForm input#trigger-interval-minute-option').prop('checked', true).change();
+                        $('#myModalForm select#new-job-trigger-min').val(jobData.minutes).change();
+                    }
+                    else if (jobData.seconds) {
+                        $('#myModalForm input[name="new-job-trigger-interval-options"]').val('seconds').change();
+                        $('#myModalForm input#trigger-interval-second-option').prop('checked', true).change();
+                        $('#myModalForm select#new-job-trigger-sec').val(jobData.seconds).change();
+                    }
+                    else {
+                        console.log('invalid interval unit parameter, may be either "minutes" or "seconds".');
+                        return;
+                    }
+                }
+                else if(jobData.trigger == 'cron') {
+                    console.log('initializing a "cron" trigger');
+                    $('#myModalForm select#new-job-trigger').val(jobData.trigger).change();
+                    $('#myModalForm input#timepicker-hour').val(jobData.hour + ':' + jobData.minute);
+                }
+                else {
+                    console.log('invalid trigger parameter');
+                    return;
+                }
+
+                $('#myModalForm input#job_action_id').val('update');
+            }
+        });
+    });
+
+
+</script>
+
+{% endblock content_special_nested %}
+
+{% block content %}
+<!--    <h1>Jobs</h1>-->
+<div id="content">
+    <table id="jobs_scheduler_table" class="table table-striped table-bordered table-hover">
+        <thead>
+        <tr id="jobs_scheduler_table_header">
+            <th class="table-view-pf-select sorting_disabled" rowspan="1" colspan="1" aria-label="Select all rows">
+                <label class="sr-only" for="selectAll">Select all rows</label>
+                <input type="checkbox" id="selectAll" name="selectAll">
+            </th>
+            <th class="id">ID</th>
+            <th class="job">Job</th>
+            <th class="trigger">Trigger</th>
+            <th class="start_date">Start date</th>
+            <th class="next_run_time">Next run time</th>
+            <th class="args">Args, kwargs</th>
+            <th class="runs">Total runs/failed</th>
+            <th class="action">Action</th>
+        </tr>
+        </thead>
+
+        <tbody id=jobs_scheduler_table_body" style>
+        {% set i = 0 %}
+        {% for job in jobs %}
+        {% set i = loop.index %}
+        <tr class="list-group list-view-pf list-view-pf-view">
+            <td class=" table-view-pf-select">
+                <label class="sr-only" for="select{{ i }}">Select row {{ i }}</label>
+                <input type="checkbox" id="select{{ i }}" name="select{{ i }}" aria-label="select{{ i }}"  data-json="{{ job }}">
+            </td>
+            <td>
+                {# <a href="{{ url_for('scheduler.get_job', job_id=job.id) }}">{{ job.id }}</a> #}
+                <a title="Job details" href="{{ url_for('scheduler.scheduler_job', job_id=job.id) }}">{{ job.id }}</a>
+            </td>
+            <td>{{ job.name }}</td>
+
+            {% if job.trigger == 'interval' %}
+            <td>every {% if job.seconds %} {{ job.seconds }} sec.
+                {% elif job.minutes %} {{ job.minutes }} min.
+                {% endif %}
+            </td>
+            {% elif job.trigger == 'cron' %}
+            <td>every day at {{ ((job.hour or '') ~ (job.minute or ''))|timeformat('%H:%M') }}</td>
+            {% endif %}
+
+            <td>{{ (job.start_date or "")|datetimeformat('%Y-%m-%d %H:%M:%S') }}</td>
+
+            <td>{{ (job.next_run_time or "")|datetimeformat('%Y-%m-%d %H:%M:%S') }}</td>
+
+            <td>
+                {% set empty = False %}
+                {% if job.args %}
+                args={{ job.args }}
+                {% else %}
+                {% set empty = True %}
+                {% endif %}
+                {% if job.kwargs %}
+                kwargs={{ job.kwargs }}
+                {% else %}
+                {% set empty = True %}
+                {% endif %}
+                {% if empty %}
+
+                {% endif %}
+            </td>
+            <td>{{ job.runs }}/{{ job.fails }}</td>
+            <td>
+                {% if job.stopped %}
+                <a href="{{ url_for('scheduler.scheduler_start_job', job_id=job.id) }}">Start</a>
+                {% else %}
+                <a href="{{ url_for('scheduler.scheduler_stop_job', job_id=job.id) }}">Stop</a>
+                {% endif %}
+            </td>
+        </tr>
+
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

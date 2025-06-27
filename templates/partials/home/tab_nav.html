@@ -1,0 +1,52 @@
+<!-- TAB NAV BEGIN -->
+<div id="home-tab-nav" style="padding-top: 5px;">
+
+    <!-- Nav tabs -->
+    <ul class="nav nav-tabs" role="navigation">
+        <li role="navigation" {% if active_tab2=="LastCheckResults" %}class="active" {% endif %}>
+            <a href="{{ url_for('home') }}" role="tab">Last check results</a>
+        </li>
+        <li role="navigation" {% if active_tab2=="Settings" %}class="active" {% endif %}>
+            <a href="{{ url_for('settings') }}" role="tab">Settings</a>
+        </li>
+    </ul>
+
+    <!-- Tab panes -->
+    <div class="tab-content">
+        {% block content_special_nested %}
+        <div role="tabpanel" class="tab-pane active" id="home">
+            </br>
+            <div class="toolbar-pf-actions" style="padding-left: 20px;">
+                <nav id="nav2">
+                    {#
+                    <!--
+                    <form id="async-form" action="/async-task" method="post" style="display:inline;">
+                        <button type="submit" onclick="showProcessing();" class="btn btn-primary">Run cluster checks</button>
+                        <span id="loading-icon" class="loading-icon">
+                            <img src="{{ url_for('static', filename='loading-small.jpg') }}" alt="Loading..">
+                        </span>
+                    </form>
+                    --> #}
+                    <div id="async-form" style="display:inline;">
+                        <button type="button" id="submit-btn" onclick="showProcessing();" class="btn btn-primary">Run cluster checks</button>
+                        <span id="loading-icon" class="loading-icon">
+                            <img src="{{ url_for('static', filename='loading-small.jpg') }}" alt="Loading..">
+                        </span>
+                    </div>
+                </nav>
+                <div id="notification" class="notification">
+                    {% with messages = get_flashed_messages() %}
+                        {% if messages %}
+                            {% for message in messages %}
+                                <div class="flash-{{ message[1] }}">{{ message }}</div>
+                            {% endfor %}
+                        {% endif %}
+                    {% endwith %}
+                </div>
+            </div>
+        </div>
+        {% endblock content_special_nested %}
+    </div>
+
+</div>
+<!-- TAB NAV END -->

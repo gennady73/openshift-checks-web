@@ -1,0 +1,15 @@
+{% extends "layout.html" %}
+
+{% block title %}
+    {{ super() }}
+{% endblock %}
+
+{% block head %}
+    {{ super() }}
+{% endblock %}
+
+{% block content %}
+<div id="result-container" class="occ-result-container">
+    {% include 'osc.local.html' %}
+</div>
+{% endblock %}

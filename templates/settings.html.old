@@ -1,0 +1,47 @@
+{% extends "layout.html" %}
+
+{% block title %}Flask App - Block 1{% endblock %}
+
+{% block head %}
+    {{ super() }}
+<div style="padding-top: 61px;"></div>
+{% endblock %}
+
+
+{% block content_special_nested %}
+    <div role="tabpanel" class="tab-pane active" id="settings">
+        </br>
+        <div class="toolbar-pf-actions">
+            <nav id="nav2">
+                <form id="async-form" action="/async-task" method="post" style="display:inline;">
+                    <button type="submit" onclick="showLoading();" class="btn btn-primary">Edit cluster checks</button>
+                    <span id="loading-icon" class="loading-icon">
+                        <img src="{{ url_for('static', filename='loading-small.jpg') }}" alt="Loading..">
+                    </span>
+                </form>
+            </nav>
+            <div id="notification" class="notification">
+                {% with messages = get_flashed_messages() %}
+                    {% if messages %}
+                        {% for message in messages %}
+                            <div class="flash-{{ message[1] }}">{{ message }}</div>
+                        {% endfor %}
+                    {% endif %}
+                {% endwith %}
+            </div>
+        </div>
+    </div>
+{% endblock content_special_nested %}
+
+{% block content %}
+<div>
+<!--    <h1>Settings</h1>-->
+    <p>Customize your scheduler settings here....</p>
+    <!-- Add your settings content here -->
+    <dl>
+      {% for key, value in config_data.items() %}
+        <dt>{{ key }} : {{ value }}</dt>
+      {% endfor %}
+    </dl>
+</div>
+{% endblock %}

@@ -1,0 +1,14 @@
+{
+    "JOBS": [
+        {
+            "id": "job2",
+            "func": "app:job2",
+            "args": [
+                1,
+                2
+            ],
+            "trigger": "interval",
+            "seconds": 45
+        }
+    ]
+}

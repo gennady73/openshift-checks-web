@@ -1,0 +1,64 @@
+<script>
+    function updateSection() {
+        var dataPath = $('.resource-items.file-item.selected').attr('data-path-name');
+        console.log("filePath:",dataPath);
+        const dataToSend = {
+          command: $('input#command').val(),
+          filePath: dataPath
+        };
+
+        fetch("{{ url_for('flaskcode.execute') }}", {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(dataToSend)
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.text();
+                })
+                .then(html => {
+                    // Replace the content of the specific section
+                    document.getElementById('section-to-update').innerHTML = html;
+                })
+                .catch(error => {
+                    console.error('Error updating section:', error);
+                });
+        }
+</script>
+
+<div id="page-row-2" class="row">
+            <div class="mb-1" style="margin-left: -5px;">
+                <div class="pb-3" style="width: 97%; height: 300px; margin:25px; padding: 0px;">
+<!--                    <textarea id="input_terminal" style="overflow: 'auto'; position:sticky; bottom:0; width: 97%; height:200px; border: 2px; border-color:green; background-color: black; color: white;-->
+<!--                    font-family: system-ui; font-size: large;" >xxx-->
+<!--                        yyy-->
+<!--                        zzz-->
+<!--                    </textarea>-->
+<!--<form method="post" action="{{ url_for('flaskcode.execute') }}">-->
+<form method="post" action="javascript:updateSection()">
+        <div style="background-color: #dddddd;  padding-top: 5px; padding-left: 5px;">
+        <label for="command">Enter Command or Script:</label>
+        <input type="text" id="command" name="command" required>
+        <button class="btn btn-primary" type="submit">Execute</button>
+        </div>
+    </form>
+                    <div id="section-to-update" class="view-lines" style="font-weight:normal; font-size:13px; height: 300px; overflow-y: scroll; background-color:black;">
+    {% if command %}
+        <h2>Command/Script Executed:</h2>
+        <pre>{{ command }}</pre>
+        {% if error %}
+            <h2>Error Output:</h2>
+            <pre style="color: red;">{{ result }}</pre>
+        {% else %}
+            <h2>Output:</h2>
+            <pre>{{ result }}</pre>
+        {% endif %}
+    {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
