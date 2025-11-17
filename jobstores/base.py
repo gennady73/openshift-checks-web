@@ -1,6 +1,5 @@
 from abc import ABCMeta, abstractmethod
 import logging
-
 import six
 
 
@@ -138,6 +137,50 @@ class BaseJobStore(six.with_metaclass(ABCMeta)):
     @abstractmethod
     def remove_all_jobs(self):
         """Removes all jobs from this store."""
+
+    def __repr__(self):
+        return '<%s>' % self.__class__.__name__
+
+
+class BaseCredentialStore(six.with_metaclass(ABCMeta)):
+    """Abstract base class that defines the interface for credential storage."""
+    _logger = logging.getLogger(__name__)
+
+    _engine = None
+    _session = None
+    _alias = None
+
+    @classmethod
+    def start(self, alias):
+        """ starting this job store """
+        self._alias = alias
+        self._logger.debug(f"{self.__class__.__name__} started with alias: {alias}")
+
+    @classmethod
+    def shutdown(self):
+        """Frees any resources still bound to this job store."""
+        self._logger.debug(f"{self.__class__.__name__} shutdown invoked")
+        # Optional: cleanup logic
+
+    @abstractmethod
+    def add_credential(self, credential):
+        pass
+
+    @abstractmethod
+    def update_credential(self, credential):
+        pass
+
+    @abstractmethod
+    def delete_credential(self, credential_id):
+        pass
+
+    @abstractmethod
+    def get_credential(self, credential_id):
+        pass
+
+    @abstractmethod
+    def list_credentials(self):
+        pass
 
     def __repr__(self):
         return '<%s>' % self.__class__.__name__

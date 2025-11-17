@@ -1,26 +1,31 @@
 # models/cluster_credential.py
-from sqlalchemy import Column, Integer, Unicode, Boolean, DateTime, Text
-from sqlalchemy.ext.declarative import declarative_base
-from datetime import datetime
+from sqlalchemy import Column, Integer, Boolean, String
+# v1.3-1.4: from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import DeclarativeBase
 
-Base = declarative_base()
+class Base(DeclarativeBase):
+    pass
 
 
 class ClusterCredential(Base):
     __tablename__ = 'cluster_credential'
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    name = Column(Unicode(128), nullable=False, unique=True)  # Cluster name
-    server = Column(Unicode(512), nullable=False)             # API URL
-    token = Column(Unicode(2048), nullable=False)             # Access token
-    user = Column(Unicode(128), nullable=True)                # Corresponding user
-    namespace = Column(Unicode(128), nullable=True)           # Default namespace
-    insecure = Column(Boolean, default=False)                 # Skip TLS verification
-    sa = Column(Unicode(128), nullable=True)                  # Service account, optional
-    certificate = Column(Text, nullable=True)                 # Login certificate for SA
+    name = Column(String(255), unique=True, nullable=False)
+    server = Column(String(255), nullable=False)
+    token = Column(String(2048), nullable=False)
+    user = Column(String(255))
+    namespace = Column(String(255))
+    insecure = Column(Boolean, default=False)
+    sa = Column(String(255))
+    certificate = Column(String(4096))
 
-    created_at = Column(DateTime, default=datetime.utcnow())
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    @classmethod
+    def from_dict(cls, data):
+        columns = list(cls.__table__.columns)
+        allowed = {col.name for col in columns}
+        filtered = {k: v for k, v in data.items() if k in allowed}
+        return cls(**filtered)
 
     def to_dict(self):
         return {
@@ -28,11 +33,9 @@ class ClusterCredential(Base):
             "name": self.name,
             "server": self.server,
             "token": self.token,
+            "certificate": self.certificate,
             "user": self.user,
             "namespace": self.namespace,
-            "insecure": self.insecure,
-            "sa": self.sa,
-            "certificate": self.certificate,
-            "created_at": self.created_at.isoformat() if self.created_at else None,
-            "updated_at": self.updated_at.isoformat() if self.updated_at else None,
+            "insecure": bool(self.insecure),
+            "sa": self.sa
         }

@@ -46,7 +46,10 @@ def scheduler_home():
 
     scheduler_state['paused'] = scheduler_global_state['paused']
     jobs = scheduler_get_jobs_data()
-    return render_template('list.html', scheduler_state=scheduler_state, active_tab="Scheduler", jobs=jobs, active_tab2="JobList")
+    return render_template('list.html', scheduler_state=scheduler_state, active_tab="Scheduler",
+                           jobs=jobs,
+                           active_tab2="JobList",
+                           clusters=app.clusters)
 
 
 @scheduler_blueprint.route('/action', methods=['GET', 'POST'])

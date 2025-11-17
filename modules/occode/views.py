@@ -2,6 +2,7 @@
 import os
 import mimetypes
 from fileinput import filename
+from http.client import responses
 
 from cryptography.x509 import OCSPNoCheck
 from flask import render_template, abort, jsonify, send_file, g, request, current_app
@@ -22,16 +23,36 @@ def index():
 
     dirname = os.path.basename(g.occode_resource_basepath)
     dtree = dir_tree(g.occode_resource_basepath, g.occode_resource_basepath + '/')
+
     return render_template('occode/index.html', dirname=dirname, dtree=dtree)
 
 # OCC
 # @blueprint.route('/resource-data/<path:file_path>.txt', methods=['GET', 'HEAD'])
-@blueprint.route('/resource-data/<path:file_path>', methods=['GET', 'HEAD'])
+@blueprint.route('/resource-data/<path:file_path>', methods=['GET', 'HEAD', 'DELETE'])
 def resource_data(file_path):
-    file_path = os.path.join(g.occode_resource_basepath, file_path)
-    if not (os.path.exists(file_path) and os.path.isfile(file_path)):
+    abs_file_path = os.path.join(g.occode_resource_basepath, file_path)
+
+    # Basic security: prevent path traversal
+    abs_file_path = os.path.abspath(str(abs_file_path))
+    if not abs_file_path.startswith(os.path.abspath(g.occode_resource_basepath)):
+        abort(403)  # Forbidden
+
+    if not (os.path.exists(abs_file_path) and os.path.isfile(abs_file_path)):
         abort(404)
-    response = send_file(file_path, mimetype='text/plain', max_age=0) # OCC cache_timeout=0
+
+    if request.method == 'DELETE':
+        try:
+            os.remove(abs_file_path)
+            success = True
+            message = "File deleted successfully."
+            return '',200 #jsonify({'success': success, 'message': message})
+        except Exception as e:
+            #return jsonify({"error": str(e)}), 500
+            success = False
+            message = 'File not deleted'
+            return jsonify({'success': success, 'message': message})
+
+    response = send_file(str(os.path.join(g.occode_resource_basepath, file_path)), mimetype='text/plain', max_age=0) # OCC cache_timeout=0
     mimetype, encoding = mimetypes.guess_type(file_path, False)
     if mimetype:
         response.headers.set('X-File-Mimetype', mimetype)

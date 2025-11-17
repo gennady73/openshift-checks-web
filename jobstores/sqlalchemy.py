@@ -1,6 +1,6 @@
 from __future__ import absolute_import
 
-from jobstores.base import BaseJobStore, JobLookupError, ConflictingIdError
+from jobstores.base import BaseJobStore, JobLookupError, ConflictingIdError, BaseCredentialStore
 from apscheduler.util import maybe_ref, datetime_to_utc_timestamp, utc_timestamp_to_datetime
 # from apscheduler.job import Job
 from models.job_log import JobLog, JobLogTable, Base
@@ -17,6 +17,7 @@ try:
         select, and_, tuple_)
     from sqlalchemy.exc import IntegrityError
     from sqlalchemy.sql.expression import null
+    from sqlalchemy.orm import sessionmaker, Session
 except ImportError:  # pragma: nocover
     raise ImportError('SQLAlchemyJobStore requires SQLAlchemy installed')
 
@@ -168,3 +169,83 @@ class SQLAlchemyJobStore(BaseJobStore):
 
     def __repr__(self):
         return '<%s (url=%s)>' % (self.__class__.__name__, self.engine.url)
+
+import logging
+import base64
+# from sqlalchemy import create_engine, MetaData, Table, Column, Integer, Unicode, Text, Boolean
+# from sqlalchemy.exc import IntegrityError
+# from sqlalchemy.sql import select, and_
+
+from models import ClusterCredential
+
+LOGGER = logging.getLogger('cluster.store')
+
+
+class ClusterCredentialStore(BaseCredentialStore):
+    def __init__(self, url=None, engine=None, metadata=None, tablename='cluster_credential', engine_options=None):
+        metadata = metadata or MetaData()
+
+        if engine:
+            self._engine = engine
+        elif url:
+            self._engine = create_engine(url, **(engine_options or {})) #  "sqlite:///clusters.db"
+        else:
+            raise ValueError('Need either "engine" or "url" defined')
+
+        self._session = sessionmaker(bind=self._engine)
+
+    def start(self, alias):
+        super().start(alias)
+        # Create tables if they don't exist
+        ClusterCredential.metadata.create_all(self._engine)
+
+    def _validate_certificate(self, cert_data):
+        if not cert_data or not cert_data.strip():
+            raise ValueError("Certificate cannot be empty")
+        # Could add PEM format validation logic here later
+        LOGGER.debug("Certificate validation passed")
+
+    def add_credential(self, credential):
+        if credential.certificate:
+            self._validate_certificate(credential.certificate)
+        with self._session() as session:
+            session.add(credential)
+            session.commit()
+            LOGGER.info(f"Added credential for cluster: {credential.name}")
+
+    def update_credential(self, credential):
+        if credential.certificate:
+            self._validate_certificate(credential.certificate)
+        with self._session() as session:
+            existing = session.get(ClusterCredential, credential.id)
+            if not existing:
+                raise ValueError(f"Credential with ID {credential.id} not found")
+            for attr, value in vars(credential).items():
+                if attr.startswith('_'): continue  # skip internal SQLAlchemy fields
+                setattr(existing, attr, value)
+            session.commit()
+            LOGGER.info(f"Updated credential for cluster: {credential.name}")
+
+    def delete_credential(self, credential_id):
+        with self._session() as session:
+            credential = session.get(ClusterCredential, credential_id)
+            if not credential:
+                raise ValueError(f"Credential with ID {credential_id} not found")
+            session.delete(credential)
+            session.commit()
+            LOGGER.info(f"Deleted credential with ID: {credential_id}")
+
+    def get_credential(self, credential_id):
+        with self._session() as session:
+            return session.get(ClusterCredential, credential_id)
+
+    def list_credentials(self):
+        with self._session() as session:
+            return session.query(ClusterCredential).all()
+
+    def shutdown(self):
+        if self._engine:
+            self._engine.dispose()
+
+    def __repr__(self):
+        return '<%s (url=%s)>' % (self.__class__.__name__, self._engine.url)

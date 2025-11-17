@@ -2,12 +2,18 @@
 
 {% block head %}
   {{ super() }}
+
+  {% block page_styles %}{% endblock %}
+  {% block page_scripts %}{% endblock %}
+
 {% endblock %}
 
-<main>
+
+
+<!--<main>-->
 {% block content_special %}
 <!-- TAB NAV BEGIN -->
-<div style="padding-top: 65px;">
+<div style="padding-top: 45px;">
   <!-- Nav tabs -->
   <ul class="nav nav-tabs" role="navigation">
 <!--    <li role="navigation" {% if active_tab2=="JobList" %}class="active"{% endif %}>-->
@@ -27,7 +33,9 @@
     <div role="tabpanel" class="tab-pane" id="settings">...</div>
     {% endblock content_special_nested %}
   </div>
-
+    <script>
+   console.log("<<< _NAVTANB_ >>>")
+</script>
 </div>
 <!-- TAB NAV END -->
 {% endblock content_special %}
@@ -39,3 +47,5 @@
     </div>
 </main>
 {% endblock content %}
+
+

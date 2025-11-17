@@ -5,6 +5,8 @@ from flask import Flask, render_template, request, jsonify, send_from_directory,
 import os
 import asyncio
 import concurrent.futures
+
+from models import ClusterCredential
 from modules.async_task import perform_async_task, perform_async_task_2
 from datetime import datetime
 from config import Config
@@ -15,8 +17,9 @@ from modules.editor.app_code_editor import init_code_editor, flaskcode_blueprint
 from modules.occode import blueprint as occode_blueprint
 import logging, logging.config
 import yaml
-from modules.security import oc_login
+from modules.security import oc_login, oc_login2
 from collections import OrderedDict
+from modules.security import cluster_credentials
 
 app = Flask(__name__)
 
@@ -41,7 +44,7 @@ app.register_blueprint(static_ext1_blueprint)
 app.register_blueprint(static_ext2_blueprint)
 app.register_blueprint(scheduler_blueprint, url_prefix='/schedule')
 app.register_blueprint(editor_blueprint, url_prefix='/editor')
-app.register_blueprint(flaskcode_blueprint, url_prefix='/flaskcode')
+#app.register_blueprint(flaskcode_blueprint, url_prefix='/flaskcode')
 app.register_blueprint(occode_blueprint, url_prefix='/occode')
 
 my_loader = jinja2.ChoiceLoader([
@@ -81,7 +84,7 @@ def datetimeformat(value, format='%H:%M:%S'):
     return tf.strftime(format)
 
 
-def get_clusters_from_kubeconfigs():
+def get_clusters_from_kubeconfigs()->list:
     kubeconfig_env = os.environ.get("KUBECONFIG", "~/.kube/config")
     kubeconfigs = []
 
@@ -103,15 +106,38 @@ def get_clusters_from_kubeconfigs():
 
     return list(clusters.values())
 
+
+def get_clusters_from_datastore()->list:
+    credentials = app.cluster_creds.list_credentials()
+    credentials_list = [cluster.to_dict() for cluster in credentials]
+
+    clusters = OrderedDict()
+    for cluster in credentials_list:
+        server = cluster["server"]
+        # Deduplicate by server URL
+        if server not in clusters:
+            clusters[server] = cluster.get("name")
+
+    clusters = list(clusters.values())
+    #return clusters
+    global cluster_info_list
+    cluster_info_list = credentials_list
+    return cluster_info_list
+
+app.cluster_creds = cluster_credentials.init_cluster_credentials_store()
+app.clusters = get_clusters_from_datastore() # get_clusters_from_kubeconfigs()
+from types import SimpleNamespace
+cluster_info_list = []
+
 @app.route('/')
 def home():
     # timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
     # flash(f'Async Task Completed Successfully at {timestamp}', 'success')
-    clusters = get_clusters_from_kubeconfigs()
-    return render_template('home/home.html', active_tab="Home", active_tab2="LastCheckResults", clusters=clusters)
+    clusters = get_clusters_from_datastore() # get_clusters_from_kubeconfigs()
+    return render_template('home/home.html', active_tab="Home", active_tab2="LastCheckResults",
+                           cluster_info_list=cluster_info_list,
+                           clusters=clusters)
 
-from types import SimpleNamespace
-cluster_info_list = []
 
 @app.route('/cluster_info/<cluster_id>')
 def cluster_info(cluster_id):
@@ -153,7 +179,7 @@ def cluster_info(cluster_id):
 
     return cluster_info_list
 
-@app.route('/settings')
+@app.route('/settings/?',  methods=['GET', 'POST'])
 def settings():
     # Add your logic for the settings page
     # Load configuration from JSON file
@@ -161,42 +187,108 @@ def settings():
         config_data = json.load(file)
         logging.getLogger('root').debug(f"scheduler configuration:\n${config_data}")
 
-    cluster_info_list = list([
-        {
-            "id": 1,
-            "name": "dev-cluster",
-            "server": "https://api.dev-cluster.example.com:6443",
-            "token": "sha256~abc123devtoken",
-            "user": "developer",
-            "namespace": "dev-namespace",
-            "insecure": True,
-            "sa": "dev-service-account"
-        },
-        {
-            "id": 2,
-            "name": "test-cluster",
-            "server": "https://api.test-cluster.example.com:6443",
-            "token": "sha256~test456token",
-            "user": "tester",
-            "namespace": "test-namespace",
-            "insecure": False,
-            "sa": "test-service-account"
-        },
-        {
-            "id": 3,
-            "name": "prod-cluster",
-            "server": "https://api.prod-cluster.example.com:6443",
-            "token": "sha256~prod789token",
-            "user": "admin",
-            "namespace": "prod",
-            "insecure": False,
-            "sa": "admin-service-account"
-        }
-    ])
+    # cluster_info_list = list([
+    #     {
+    #         "id": 1,
+    #         "name": "dev-cluster",
+    #         "server": "https://api.dev-cluster.example.com:6443",
+    #         "token": "sha256~abc123devtoken",
+    #         "certificate": "XXX",
+    #         "user": "developer",
+    #         "namespace": "dev-namespace",
+    #         "insecure": True,
+    #         "sa": "dev-service-account"
+    #     },
+    #     {
+    #         "id": 2,
+    #         "name": "test-cluster",
+    #         "server": "https://api.test-cluster.example.com:6443",
+    #         "token": "sha256~test456token",
+    #         "certificate": "YYY",
+    #         "user": "tester",
+    #         "namespace": "test-namespace",
+    #         "insecure": False,
+    #         "sa": "test-service-account"
+    #     },
+    #     {
+    #         "id": 3,
+    #         "name": "prod-cluster",
+    #         "server": "https://api.prod-cluster.example.com:6443",
+    #         "token": "sha256~prod789token",
+    #         "certificate": "ZZZ",
+    #         "user": "admin",
+    #         "namespace": "prod",
+    #         "insecure": False,
+    #         "sa": "admin-service-account"
+    #     }
+    # ])
+    #cluster_info_list = []
 
+    credentials = app.cluster_creds.list_credentials()
+    credentials_list = [cluster.to_dict() for cluster in credentials]
+    global cluster_info_list
+    cluster_info_list = credentials_list
+
+    clusters = OrderedDict()
+    for cluster in cluster_info_list:
+        server = cluster["server"]
+        # Deduplicate by server URL
+        if server not in clusters:
+            clusters[server] = cluster.get("name")
+
+    clusters = list(clusters.values())
+
+    if request.method == 'POST':
+
+        # name = "dev-cluster",
+        # server = "https://api.dev-cluster.example.com:6443",
+        # token = "sha256~abc123devtoken",
+        # certificate = "---CERTIFICATE---",
+        # user = "developer",
+        # namespace = "dev-namespace",
+        # insecure = True,
+        # sa = "dev-service-account"
+        #
+        # cluster = ClusterCredential(
+        #     name="dev-cluster",
+        #     server="https://api.dev-cluster.example.com:6443",
+        #     token="sha256~abc123devtoken",
+        #     certificate="---CERTIFICATE---",
+        #     user="developer",
+        #     namespace="dev-namespace",
+        #     insecure=True,
+        #     sa="dev-service-account"
+        # )
+
+        form_data = request.form.to_dict()
+        #form_data['insecure'] = form_data['insecure']=='on'
+        clean_data = {}
+        for k, v in form_data.items():
+            if k == 'action':
+                continue
+            if k == 'insecure':
+                clean_data[k] = True if (form_data['insecure'] and form_data['insecure']=='on') else False
+            else:
+                clean_data[k] = v
+
+        cluster = ClusterCredential(**clean_data)
+
+        if form_data.get('action') == 'create':
+            app.cluster_creds.add_credential(
+                credential=cluster
+            )
+        elif form_data.get('action') == 'update':
+            app.cluster_creds.update_credential(
+                credential=cluster
+            )
+        elif form_data.get('action') == 'delete':
+            app.cluster_creds.delete_credential(
+                credential_id=cluster.id
+            )
     return render_template('home/settings.html',
                            config_data=config_data,
                            cluster_info_list=cluster_info_list,
+                           clusters=clusters,
                            active_tab="Home", active_tab2="Settings")
 
 
@@ -217,7 +309,8 @@ def login_cluster():
     if not cluster_name:
         return jsonify({"error": "No cluster selected"}), 400
 
-    response = oc_login(cluster_name)
+    #TODO response = oc_login(cluster_name)
+    response = oc_login2(cluster_name, app.cluster_creds)
     return jsonify(response)
 
 
@@ -238,9 +331,13 @@ async def async_task_route():
         cluster_name = request.json.get('cluster')
         loop = asyncio.get_event_loop()
         #result = await asyncio.wait_for(asyncio.gather(perform_async_task()), timeout=15)
-        result = await asyncio.wait_for(asyncio.gather(perform_async_task_2(cluster_name)), timeout=15)
+        login_attributes = oc_login2(cluster_name=cluster_name, credentials_store=app.cluster_creds)
         timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-        flash(f'Task Completed at {timestamp}. Result:{result}', 'success')
+        flash(f'Task execution is scheduled at {timestamp}.', 'success')
+        result = await asyncio.wait_for(asyncio.gather(perform_async_task_2(cluster_name, login_attributes=login_attributes)), timeout=600)
+        #result.decode('utf-8')
+        #timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        #flash(f'Task execution is scheduled at {timestamp}. Result:{result}', 'success')
     except concurrent.futures.TimeoutError:
         flash('Task timed out!', 'error')
     except Exception as e:
@@ -248,15 +345,64 @@ async def async_task_route():
 
     #return redirect(url_for('home')
     #return render_template('osc.local.html')
-    home_tab_nav = render_template('partials/home/tab_nav.html')
-    result_container = render_template('osc.local.html')
+    #home_tab_nav = render_template('partials/home/tab_nav.html')
+    #result_container = render_template('osc.local.html')
 
     return jsonify({
-        "home-tab-nav": home_tab_nav,
-        "result-container": result_container,
+        "home_tab_nav": render_template('partials/home/tab_nav.html'),
+        "result_container": render_template('osc.local.html'),
         "notification": get_flashed_messages(True)
     })
 
+@app.route('/results', methods=['POST', 'GET'])
+async def results_route():
+
+    #db_session: Session = SQLAlchemyJobStore.get_session('risu_results')
+
+    if request.method == 'POST':
+        # --- 1. Receive & validate JSON ---
+        try:
+            risu_json = request.get_json(force=True)
+        except Exception as e:
+            return jsonify({"error": f"Invalid JSON: {str(e)}"}), 400
+
+        # --- 2. Extract metadata ---
+        cluster_name = risu_json.get("cluster_name") or risu_json.get("cluster", "unknown")
+        risu_version = risu_json.get("version", "unknown")
+
+        # Optional: validate required fields
+        if not cluster_name:
+            return jsonify({"error": "Missing cluster_name"}), 400
+    elif request.method == 'GET':
+        # --- 5. Retrieve results ---
+        cluster_name = request.args.get('cluster')
+        since = request.args.get('since')  # optional timestamp filter
+
+        # query = db_session.query(RisuResult)
+        # if cluster_name:
+        #     query = query.filter(RisuResult.cluster_name == cluster_name)
+        # if since:
+        #     try:
+        #         since_dt = datetime.fromisoformat(since)
+        #         query = query.filter(RisuResult.run_timestamp >= since_dt)
+        #     except ValueError:
+        #         return jsonify({"error": "Invalid 'since' format, expected ISO8601"}), 400
+        #
+        # records = query.order_by(RisuResult.run_timestamp.desc()).all()
+        records = []
+
+        # --- render result partial for UI comparison ---
+        html_partial = render_template(
+            'partials/result_container.html',
+            results=[r.as_dict() for r in records]
+        )
+
+        return jsonify({
+            "result_container": html_partial,
+            # "count": len(records)
+        })
+
+    pass
 
 @app.route('/extchecks/')
 def extchecks():
@@ -306,7 +452,6 @@ def job2(var_one, var_two):
             logging.getLogger('root').debug(f"{random_number} is an odd number.")
             logging.getLogger('root').debug(f"job2: {str(var_one)} / {str(0)} = {var_one / 0}")
 
-
 log_formatter:logging.Formatter = CustomFormatter()
 init_code_editor(app)
 
@@ -329,6 +474,11 @@ logging.getLogger('root').debug("test")
 app.logs = init_job_log_store()
 app.scheduler = init_scheduler(app)
 init_scheduler_global_state()
+
+
+# @app.teardown_appcontext
+# def shutdown_credential_store(exception=None):
+#     app.cluster_creds.shutdown()
 
 if __name__ == '__main__':
 
