@@ -127,7 +127,8 @@ def get_clusters_from_datastore()->list:
 app.cluster_creds = cluster_credentials.init_cluster_credentials_store()
 app.clusters = get_clusters_from_datastore() # get_clusters_from_kubeconfigs()
 from types import SimpleNamespace
-cluster_info_list = []
+app.cluster_info_list = []
+app.cluster_info_list = get_clusters_from_datastore()
 
 @app.route('/')
 def home():

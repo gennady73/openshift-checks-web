@@ -49,6 +49,7 @@ def scheduler_home():
     return render_template('list.html', scheduler_state=scheduler_state, active_tab="Scheduler",
                            jobs=jobs,
                            active_tab2="JobList",
+                           cluster_info_list=app.cluster_info_list,
                            clusters=app.clusters)
 
 

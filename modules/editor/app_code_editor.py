@@ -62,4 +62,5 @@ def code_editor_home():
     return render_template( 'editor/editor.html', active_tab="EditorR", active_tab2="JobList",
                             dirname=dirname,
                             dtree=dtree,
+                            cluster_info_list=app.cluster_info_list,
                             clusters=app.clusters)

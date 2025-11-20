@@ -645,7 +645,7 @@ occode.initEditorBody = function (editorId, resource, isNewResource) {
     occode.$editorContainer.data('filePath', resource.filePath);
     occode.$editorContainer.data('isNewResource', !!isNewResource);
     occode.highlightSelectedResource(resource.filePath);
-    //debugger;
+    occode.storage.set('occodeterminalEnabled', Number(0)); // OCC
     return occode.$editorBody;
 };
 

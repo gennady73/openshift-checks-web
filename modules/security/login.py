@@ -98,14 +98,30 @@ def oc_login2(cluster_name: str, credentials_store:ClusterCredentialStore):
         cmd.append("--insecure-skip-tls-verify=true")
 
     LOGGER.debug(f"Login command constructed for cluster '{cluster_name}': {' '.join(cmd)}")
+    try:
+        proc = subprocess.run(cmd, check=True, capture_output=True, text=True)
 
-    return {
-        "command": ' '.join(cmd),
-        "user": credentials.user,
-        "cluster": credentials.name,
-        "context": credentials.namespace,
-        "kubeconfig": ''
-    }
+        if proc.returncode == 0:
+            LOGGER.info(f"Login to OpenShift cluster successful: {cluster_name}")
+            LOGGER.info(f"{proc.stdout}")
+        else:
+            LOGGER.error(f"Login to OpenShift cluster failed: {cluster_name}")
+            LOGGER.info(f"{proc.stderr}")
+
+        return {
+            "command": ' '.join(cmd),
+            "user": credentials.user,
+            "cluster": credentials.name,
+            "context": credentials.namespace,
+            "kubeconfig": ''
+        }
+    except subprocess.CalledProcessError as e:
+        LOGGER.error(f"Login failed for cluster {cluster_name}: {e.stderr or str(e)}")
+        return {"error": e.stderr or str(e)}
+
+    except Exception as e:
+        LOGGER.error(f"Unexpected error during login to {cluster_name}: {str(e)}")
+        return {"error": str(e)}
 
 def oc_login(cluster_name: str):
     """

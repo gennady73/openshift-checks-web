@@ -91,6 +91,12 @@ def execute():
         file_path = request.get_json()['filePath']
         print(f'### file_path ###: {file_path}')
 
+#       USE OF KUBECONFIG
+#       1. resolve config file:
+#       kubeconfig = f"KUBECONFIG={os.path.expanduser("~/.kube/config")}"
+#       2. add following line to the cmd:
+#       f"export {kubeconfig} && " \
+
         if command is None or command == '':
             command = request.json.get('command', '')
 
@@ -105,15 +111,16 @@ def execute():
         is_new_resource = bool(int(request.form.get('is_new_resource', 0)))
         if not is_new_resource and not (os.path.exists(file_path) and os.path.isfile(file_path)):
             cmd = f"cd {absolute_path} && " \
-                  f"source ./venv/bin/activate && " \
+                  f"source ./.venv/bin/activate && " \
                   f"echo Unable to run {file_path}"
         elif command is not None and command != '':
             cmd = f"cd {absolute_path} && " \
-                  f"source ./venv/bin/activate && " \
+                  f"source ./.venv/bin/activate && " \
                   f"{command}"
         else:
+
             cmd = f"cd {absolute_path} && " \
-                  f"source ./venv/bin/activate && " \
+                  f"source ./.venv/bin/activate && " \
                   f"export INSTALL_CONFIG_PATH={absolute_path}/kubeconfig/install-config.yaml && " \
                   f"./openshift-checks.sh --single {file_path}"
 
