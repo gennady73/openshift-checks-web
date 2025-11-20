@@ -608,6 +608,23 @@ occode.setEditorEvents = function (editor) {
         },
     });
 
+    // delete action
+    editor.addAction({
+        id: 'delete',
+        label: 'Delete',
+        keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyMod.Shift | monaco.KeyCode.KEY_D],
+        precondition: null,
+        keybindingContext: null,
+        contextMenuGroupId: 'navigation',
+        contextMenuOrder: 1.6,
+        run: function (ed) {
+            if (occode.editorWidget.editorState != occode.editorStates.BUSY) {
+                occode.deleteEditor({url: occode.$editorContainer.data('url'), filePath: occode.$editorContainer.data('filePath')}, true);
+            }
+        },
+    });
+
+
     // change event
     editor.onDidChangeModelContent(function (e) {
         occode.setEditorState(occode.editorStates.MODIFIED);
@@ -628,7 +645,7 @@ occode.initEditorBody = function (editorId, resource, isNewResource) {
     occode.$editorContainer.data('filePath', resource.filePath);
     occode.$editorContainer.data('isNewResource', !!isNewResource);
     occode.highlightSelectedResource(resource.filePath);
-    //debugger;
+    occode.storage.set('occodeterminalEnabled', Number(0)); // OCC
     return occode.$editorBody;
 };
 
@@ -747,6 +764,49 @@ occode.loadEditor = function (resource, forceReload, isNewResource) {
         });
     }
 };
+
+// OCC
+occode.deleteEditor = function (resource, forceReload, isNewResource) {
+    if (!forceReload && (occode.editorWidget.resourceName == resource.url || (occode.editorWidget.editorState == occode.editorStates.MODIFIED && !confirm('Current changes not saved. Are you sure to move on without saving?')))) {
+        occode.editorWidget.editor.focus();
+        return false;
+    }
+    if (isNewResource) {
+        occode.setEditor(occode.defaultEditorValue, resource, isNewResource);
+    } else {
+        $.ajax({
+            type: 'POST',
+            url: resource.url,
+            dataType: 'text',
+            cache: false,
+            beforeSend: function (xhr, settings) {
+                occode.$editorLoader.show();
+            },
+            success: function (data, status, xhr) {
+                if (status == 'success') {
+                    resource.mimetype = xhr.getResponseHeader('X-File-Mimetype');
+                    resource.extension = xhr.getResponseHeader('X-File-Extension');
+                    resource.encoding = xhr.getResponseHeader('X-File-Encoding');
+                    occode.setEditor(data, resource);
+                } else {
+                    occode.clearEditor(occode.editorBodyMsg('<h1 class="text-center">Error while delete file !</h1>'));
+                }
+            },
+            error: function (xhr, status, err) {
+                occode.clearEditor(
+                    occode.editorBodyMsg(
+                        '<h1 class="text-center">Error while delete file !</h1>'+
+                        '<h2 class="text-center text-danger">'+err+'</h2>'
+                    )
+                );
+            },
+            complete: function (xhr, status) {
+                occode.$editorLoader.hide();
+            },
+        });
+    }
+};
+
 
 // OCC
 occode.preLoadEditor = function (resource, forceReload, isNewResource) {

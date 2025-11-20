@@ -84,7 +84,7 @@ body {
     height: 100%;
     overflow: auto;
     padding: 1px;
-    max-height: calc(100vh - 85px)
+    max-height: calc(100vh - 125px)
 }
 
 #flaskcode-list .list-header {

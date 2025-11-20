@@ -1,9 +1,12 @@
 # models/job_log.py
-from sqlalchemy import Column, Integer, Unicode, DateTime, Text, LargeBinary
-from sqlalchemy.ext.declarative import declarative_base
-from datetime import datetime
 
-Base = declarative_base()
+from sqlalchemy import Column, Integer, Unicode, DateTime, Text, LargeBinary
+# v1.3-1.4: from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import DeclarativeBase
+from datetime import datetime, timezone
+
+class Base(DeclarativeBase):
+    pass
 
 
 class JobLogTable(Base):
@@ -14,7 +17,7 @@ class JobLogTable(Base):
     run_count = Column(Integer)
     fail_count = Column(Integer)
     event = Column(Text)
-    timestamp = Column(DateTime, default=datetime.utcnow)
+    timestamp = Column(DateTime, default=datetime.now(timezone.utc))
     log_state = Column(LargeBinary, nullable=False)
 
     def __repr__(self):

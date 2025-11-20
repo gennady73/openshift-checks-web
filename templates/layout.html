@@ -141,19 +141,19 @@
               contentType: 'application/json',
               data: JSON.stringify({ cluster: clusterName }),
               success: function (html) {
-              debugger;
-                //$('#result-container').html(html);  // Replace part of page
-                // "home-tab-nav": home_tab_nav,
-                // "result-container": result_container
+
+                // Replace parts of page
                 $('#home-tab-nav').html(html.home_tab_nav);
                 $('#result-container').html(html.result_container);
                 $('#notification').html(html.notification);
               },
               error: function (xhr, status, err) {
+
                 console.error("AJAX error:", err);
                 alert("AJAX error: " + err);
               },
               complete: function () {
+
                 $('#loading-icon').hide();
                 $('#submit-btn').prop('disabled', false);
               }
@@ -175,7 +175,6 @@
 <header>
     <nav class="navbar navbar-pf-vertical navbar-fixed-top">
         <div class="navbar-header">
-<!--            <a class="navbar-brand" href="#"><span class="title" id="reporttitle">OpenShift Checks</span><</a> -->
             <a class="navbar-brand" id="reporttitle" href="#" style="
                 min-width: 200px;
                 align-self: center;
@@ -230,35 +229,14 @@
 
             {# ### Cluster selection drop-down menu ### #}
             <ul class="nav navbar-nav occ-navbar-nav occ-nav navbar-right" style="margin-right:5px;">
-<!--                <li><span style="color:#ffffff;background-color:transparent;" id="clusterName">cluster-name</span></li>-->
-<!--                <li class="dropdown" value="">-->
-<!--                    <a href="#0" class="dropdown-toggle nav-item" id="selectCluster" data-toggle="dropdown"-->
-<!--                       aria-haspopup="true" aria-expanded="true">-->
-<!--                        <span title="Select Cluster" class="active">Cluster</span>-->
-<!--                        <span class="caret"></span>-->
-<!--                    </a>-->
-<!--                    <ul class="dropdown-menu" aria-labelledby="selectCluster">-->
-<!--                        <li value="cluster-A">cluster-A</li>-->
-<!--                        <li value="cluster-B">cluster-B</li>-->
-<!--                        <li value="cluster-C">cluster-C</li>-->
-<!--                    </ul>-->
-<!--                </li>-->
                 <li class="nav navbar-nav occ-navbar-nav occ-nav">
                     <span id="project-location" class="fa" style="padding-top: 12px;">
                         <select class="form-control input-small fa" id="cluster-select"
                             aria-describedby="project-location"
                             data-error="The value is empty!" data-minlength="3" required >
-                            {#
-                            <option value="checks-extended" {% if dirname|truncate(20)=="checks-extended" %} selected {% endif %} >
-                                cluster.abc</option>
-                            <option value="checks-extended" {% if dirname|truncate(20)=="checks-extended" %} selected {% endif %} disabled>
-                                cluster.123</option>
-                            <option value="checksroot" {% if dirname|truncate(20)=="checksroot" %} selected {% endif %} >
-                                cluster.1234567890.aaaaaaaaa0.bbbbbbbbb0.ccccccccc0.ddddddddd0.eeeeeeeee0.fffffffff0.ggggggggg0</option>
-                            #}
                              <option value="">select cluster</option>
-                          {% for cluster in clusters %}
-                            <option value="{{ cluster }}">{{ cluster }}</option>
+                          {% for cluster in cluster_info_list %}
+                            <option value="{{ cluster.id }}">{{ cluster.name }}</option>
                           {% endfor %}
                         </select>
                     </span>

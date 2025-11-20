@@ -43,7 +43,7 @@
 
             var data = JSON.parse(rowData);
 
-            var modal = $('#credentialsModal');
+            var modal = $('#updateCredentialsModal');
             modal.find('input[name="id"]').val(data.id);
             modal.find('input[name="name"]').val(data.name);
             modal.find('input[name="server"]').val(data.server);
@@ -100,7 +100,7 @@
                     <button type="button" class="btn btn-primary" id="createCredential" name="createCredential" data-toggle="modal" data-target="#credentialsModal">
                         Add new credential
                     </button>
-                    <button type="button" class="btn btn-primary"  id="editCredential" name="editCredential" data-toggle="modal" data-target="#credentialsModal" disabled>
+                    <button type="button" class="btn btn-primary"  id="editCredential" name="editCredential" data-toggle="modal" data-target="#updateCredentialsModal" disabled>
                         Edit credential
                     </button>
                     <button type="button" class="btn btn-primary" id="deleteCredential" name="deleteCredential" data-toggle="modal" data-target="#deleteCredentialsModal" disabled>
@@ -179,15 +179,16 @@
 </div>
 
 {# MODALS FOR TABLE OPERATIONS #}
-{# CREATE / EDIT #}
+{# CREATE #}
 <div class="modal fade" id="credentialsModal" tabindex="-1" role="dialog" aria-labelledby="credentialsModalLabel">
   <div class="modal-dialog" role="document">
     <div class="modal-content">
-      <form id="create-credentials-form">
+      <form id="create-credentials-form" method="post" title="create">
         <div class="modal-header">
           <h4 class="modal-title" id="credentialsModalLabel">Create Credentials</h4>
         </div>
         <div class="modal-body">
+            <input type="hidden" name="action" value="create" />
           <div class="form-group"><label>Cluster Name</label><input class="form-control" name="name" required></div>
           <div class="form-group"><label>API Server</label><input class="form-control" name="server" required></div>
           <div class="form-group"><label>Token</label><input class="form-control" name="token"></div>
@@ -209,15 +210,49 @@
   </div>
 </div>
 
+{# UPDATE #}
+<div class="modal fade" id="updateCredentialsModal" tabindex="-1" role="dialog" aria-labelledby="updateCredentialsModalLabel">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <form id="update-credentials-form" method="post" title="update">
+        <div class="modal-header">
+          <h4 class="modal-title" id="updateCredentialsModalLabel">Create Credentials</h4>
+        </div>
+        <div class="modal-body">
+            <input type="hidden" name="action" value="update" />
+            <input type="hidden" name="id" />
+          <div class="form-group"><label>Cluster Name</label><input class="form-control" name="name" required></div>
+          <div class="form-group"><label>API Server</label><input class="form-control" name="server" required></div>
+          <div class="form-group"><label>Token</label><input class="form-control" name="token"></div>
+          <div class="form-group">
+              <label>Certificate</label>
+              <textarea class="form-control" name="certificate" rows="5" style="min-width: 550px;"></textarea>
+          </div>
+          <div class="form-group"><label>User</label><input class="form-control" name="user"></div>
+          <div class="form-group"><label>Namespace</label><input class="form-control" name="namespace"></div>
+          <div class="checkbox"><label><input type="checkbox" name="insecure"> Skip TLS Verify</label></div>
+          <div class="form-group"><label>Service Account</label><input class="form-control" name="sa"></div>
+        </div>
+        <div class="modal-footer">
+          <button type="submit" class="btn btn-primary">Update</button>
+          <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
 {# DELETE #}
 <div class="modal fade" id="deleteCredentialsModal" tabindex="-1" role="dialog" aria-labelledby="deleteCredentialsModalLabel">
   <div class="modal-dialog" role="document">
     <div class="modal-content">
-      <form id="delete-credentials-form">
+      <form id="delete-credentials-form" method="post" title="delete">
         <div class="modal-header">
           <h4 class="modal-title" id="deleteCredentialsModalLabel">Delete Credentials</h4>
         </div>
         <div class="modal-body">
+              <input type="hidden" name="action" value="update" />
+            <input type="hidden" name="id" />
           <div class="form-group"><label>Cluster Name</label><input class="form-control" name="name" required readonly></div>
         </div>
         <div class="modal-footer">

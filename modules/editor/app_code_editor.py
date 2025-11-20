@@ -1,5 +1,5 @@
 from flask import Blueprint, render_template, Flask
-import flaskcode
+#import flaskcode
 import  sys
 import os
 import modules.occode as occode
@@ -7,7 +7,7 @@ import modules.occode as occode
 app:Flask=None
 
 editor_blueprint: Blueprint = Blueprint('editor', __name__, static_folder='static', template_folder='templates/editor')
-flaskcode_blueprint: Blueprint = flaskcode.blueprint
+flaskcode_blueprint: Blueprint = occode.blueprint
 occode_blueprint: Blueprint = occode.blueprint
 
 def init_code_editor(app_flask: Flask):
@@ -32,14 +32,14 @@ def init_code_editor(app_flask: Flask):
 # def code_editor_home():
 #     return render_template('editor/editor.html', active_tab="EditorR", active_tab2="JobList")
 
-from flaskcode import views
+from modules.occode import views
 import os
 import mimetypes
 from fileinput import filename
 
 from cryptography.x509 import OCSPNoCheck
 from flask import render_template, abort, jsonify, send_file, g, request, current_app
-from flaskcode.utils import write_file, dir_tree, get_file_extension
+from modules.occode.utils import write_file, dir_tree, get_file_extension
 
 
 @editor_blueprint.route('/', methods=['GET', 'POST'])
@@ -59,4 +59,8 @@ def code_editor_home():
     dtree = dir_tree(g.occode_resource_basepath, g.occode_resource_basepath + '/')
     #return render_template('flaskcode/index.html', dirname=dirname, dtree=dtree)
     # return render_template('editor/editor.html', active_tab="EditorR", active_tab2="JobList", dirname=dirname, dtree=dtree)
-    return render_template( 'editor/editor.html', active_tab="EditorR", active_tab2="JobList", dirname=dirname, dtree=dtree)
+    return render_template( 'editor/editor.html', active_tab="EditorR", active_tab2="JobList",
+                            dirname=dirname,
+                            dtree=dtree,
+                            cluster_info_list=app.cluster_info_list,
+                            clusters=app.clusters)

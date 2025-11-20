@@ -102,7 +102,7 @@ $(function () {
             var termEnabled = occode.terminalEnabled(!occode.terminalEnabled());
             console.log('terminal enabled=',termEnabled);
             if(termEnabled) {
-                $('div#page-row-2').attr('style','position: sticky; bottom:0')
+                $('div#page-row-2').attr('style','position: sticky; bottom:0;')
                 $("#test_script").val($("#resource-name").attr("title"));
             }
             else {
@@ -477,6 +477,21 @@ occode.highlightSelectedResource = function (filePath, parentPath) {
     $('#editor-header #resource-name').text(occode.strTruncateLeft(filePath, 40)).attr('title', filePath);
 };
 
+// OCC
+occode.removeDeletedResource = function (filePath, parentPath) {
+    var $element = $('ul#dir-tree .file-item[data-path-name="' + filePath + '"]');
+    var $parentItem = $('.dir-item[data-path-name="'+parentPath+'"]');
+
+    if ($element.length) {
+        if ($element.hasClass('selected')) {
+            occode.resetSelectedResource();
+            $('#editor-header #resource-name').text('').attr('title', '');
+        }
+
+        $element.remove();
+    }
+};
+
 occode.notifyCursorPosition = function (position) {
     if (position) {
         $('span#line_num').text(position.lineNumber);
@@ -608,6 +623,23 @@ occode.setEditorEvents = function (editor) {
         },
     });
 
+    // delete action
+    editor.addAction({
+        id: 'delete',
+        label: 'Delete',
+        keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyMod.Shift | monaco.KeyCode.KEY_D],
+        precondition: null,
+        keybindingContext: null,
+        contextMenuGroupId: 'navigation',
+        contextMenuOrder: 1.6,
+        run: function (ed) {
+            if (occode.editorWidget.editorState != occode.editorStates.BUSY) {
+                occode.deleteEditor({url: occode.$editorContainer.data('url'), filePath: occode.$editorContainer.data('filePath')}, true);
+            }
+        },
+    });
+
+
     // change event
     editor.onDidChangeModelContent(function (e) {
         occode.setEditorState(occode.editorStates.MODIFIED);
@@ -628,7 +660,7 @@ occode.initEditorBody = function (editorId, resource, isNewResource) {
     occode.$editorContainer.data('filePath', resource.filePath);
     occode.$editorContainer.data('isNewResource', !!isNewResource);
     occode.highlightSelectedResource(resource.filePath);
-    debugger;
+    console.log('initEditorBody');//debugger;
     return occode.$editorBody;
 };
 
@@ -660,7 +692,7 @@ occode.setEditor = function (data, resource, isNewResource) {
     if (!occode.editorWidget.editor) {
         occode.terminalEnabled();// OCC
         occode.resetEditorBody();
-        debugger;
+        console.log('setEditor');//debugger;
         occode.editorWidget.editor = monaco.editor.create(occode.editorElement, {
             theme: occode.editorTheme(),
             minimap: {enabled: occode.minimapEnabled()},
@@ -749,6 +781,78 @@ occode.loadEditor = function (resource, forceReload, isNewResource) {
 };
 
 // OCC
+occode.deleteEditor = function (resource, forceReload, isNewResource) {
+    if (!forceReload && (occode.editorWidget.resourceName == resource.url || (occode.editorWidget.editorState == occode.editorStates.MODIFIED && !confirm('Current changes not saved. Are you sure to move on without saving?')))) {
+        occode.editorWidget.editor.focus();
+        return false;
+    }
+    if (isNewResource) {
+        occode.setEditor(occode.defaultEditorValue, resource, isNewResource);
+    } else {
+
+    if (resource.filePath && occode.editorWidget.editor.getModel(resource.filePath)) {
+        occode.editorWidget.editor.getModel(resource.filePath).dispose()
+        delete occode.editorWidget.editor.getModel(resource.filePath)
+        console.log(`File "${resource.filePath}" deleted.`);
+
+        if(occode.editorWidget.editor.getModel() == null) {
+            //occode.editorWidget.editor.setValue('');
+            occode.clearEditor(occode.editorBodyMsg('<h1 class="text-center">&lt;/&gt;</h1>'));
+        }
+    } else {
+        var err = `File "${resource.filePath}" not found.`;
+        console.log(err);
+        occode.clearEditor(
+            occode.editorBodyMsg(
+                '<h1 class="text-center">Error while delete file !</h1>'+
+                '<h2 class="text-center text-danger">'+err+'</h2>'
+            )
+        );
+    }
+
+        //var data = new FormData();
+        //data.set('resource_data', '' /*occode.editorWidget.editor.getValue()*/);
+
+        $.ajax({
+            type: 'DELETE',
+            url: resource.url,
+            //data,
+            dataType: 'text',
+            cache: false,
+            beforeSend: function (xhr, settings) {
+                occode.$editorLoader.show();
+            },
+            success: function (data, status, xhr) {
+                if (status == 'success') {
+                    resource.mimetype = xhr.getResponseHeader('X-File-Mimetype');
+                    resource.extension = xhr.getResponseHeader('X-File-Extension');
+                    resource.encoding = xhr.getResponseHeader('X-File-Encoding');
+                    occode.setEditor(data, resource);
+                    var filePath = resource.filePath;
+                    occode.removeDeletedResource(filePath, occode.dirname(filePath).replace(/^\/+|\/+$/gm,''));
+                    occode.notifyEditor(data.message || 'Deleted!');
+                } else {
+                    occode.clearEditor(occode.editorBodyMsg('<h1 class="text-center">Error while delete file !</h1>'));
+                }
+            },
+            error: function (xhr, status, err) {
+                occode.clearEditor(
+                    occode.editorBodyMsg(
+                        '<h1 class="text-center">Error while delete file !</h1>'+
+                        '<h2 class="text-center text-danger">'+err+'</h2>'
+                    )
+                );
+            },
+            complete: function (xhr, status) {
+                occode.$editorLoader.hide();
+            },
+        });
+
+    }
+};
+
+
+// OCC
 occode.preLoadEditor = function (resource, forceReload, isNewResource) {
 //    if (!forceReload && (occode.editorWidget.resourceName == resource.url || (occode.editorWidget.editorState == occode.editorStates.MODIFIED && !confirm('Current changes not saved. Are you sure to move on without saving?')))) {
 //        occode.editorWidget.editor.focus();
@@ -813,6 +917,12 @@ occode.openResource = function ($resourceElement) {
 };
 
 occode.openNewFileModal = function ($resourceElement) {
+    console.log('openNewFileModal'); //debugger;
+
+    if ($resourceElement == null || $resourceElement === undefined){
+        occode.notifyEditor('The directory in resource tree was not selected.', 'error')
+        return;
+    }
     var $modal = $('#fileNameModal');
     $modal.find('.modal-title').text('Create New File');
     $modal.find('#base_url').val($resourceElement.data('url').replace(/\.txt$/i, ''));
