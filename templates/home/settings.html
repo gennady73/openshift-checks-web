@@ -1,6 +1,6 @@
 {% extends 'home/base.html' %}
 
-{% block title %}Flask App - Block 1{% endblock %}
+{% block title %}Check results - settings{% endblock %}
 
 {% block head %}
     {{ super() }}
@@ -21,15 +21,65 @@
 
         $('#createCredential').on('click', function() {
             var modal = $('#credentialsModal');
-            modal.find('input[name="id"]').val('');
+            modal.find('input[name="uuid"]').val('');
             modal.find('input[name="name"]').val('');
             modal.find('input[name="server"]').val('');
             modal.find('input[name="token"]').val('');
             modal.find('input[name="user"]').val('');
             modal.find('input[name="namespace"]').val('');
-            modal.find('input[name="insecure"]').prop('checked', false);
+            modal.find('input[id="insecure-create"].form-control').prop('checked', false);
+//            modal.find('input[name="insecure".form-control]').prop('checked', false);
             modal.find('input[name="sa"]').val('');
         });
+
+        // Bind click event to the view cluster links
+        // TEST DATA
+//            var d = {  'id': 4,
+//                'name': 'preprod-cluster',
+//                'server': 'https://api.preprod-cluster.example.com:6443',
+//                'token': 'sha256~abc123devtoken',
+//                'certificate': '',
+//                'user': 'admin',
+//                'namespace': 'default',
+//                'insecure': True,
+//                'sa': 'admin-service-account'
+//            };
+        $('.view-cluster-link').on('click', function(e) {
+            e.preventDefault();
+            // Find the checkbox in the same row to grab the existing JSON data
+            var rowData = $(this).closest('tr').find(':checkbox').data('json');
+
+            if (rowData) {
+                // Assuming rowData is a JSON string, parse it
+                rowData = rowData.replace(/'/g, '"');
+                rowData = rowData.replace(/True/g, '"True"');
+                rowData = rowData.replace(/False/g, '"False"');
+                rowData = rowData.replace(/None/g, '"None"');
+
+                var data = JSON.parse(rowData);
+                // Populate the modal fields
+                // Note: Adjust the keys (e.g., rowData.cluster_name) to match the exact keys in your JSON object
+                $('#view-cluster-uuid').val(data.uuid || '');
+                $('#view-cluster-name').val(data.name || '');
+                $('#view-api-server').val(data.server || '');
+                $('#view-token').val(data.token || '');
+                $('#view-cert').val(data.certificate || '');
+                $('#view-user').val(data.user || '');
+                $('#view-namespace').val(data.namespace || '');
+
+                // Handle the boolean state for the checkbox
+                var skipTls = (data.insecure === 'True' || data.insecure === true);
+                $('#view-skip-tls').prop('checked', skipTls);
+
+                $('#view-service-account').val(data.sa || '');
+
+                // Trigger the modal
+                $('#viewClusterModal').modal('show');
+            } else {
+                console.error("No JSON data found for this row.");
+            }
+        });
+
 
         $('#editCredential').on('click', function() {
             const selected = $('#cluster_config_table  tbody :checkbox:checked').closest('tr').find(':checkbox')
@@ -44,13 +94,14 @@
             var data = JSON.parse(rowData);
 
             var modal = $('#updateCredentialsModal');
-            modal.find('input[name="id"]').val(data.id);
+            modal.find('input[name="uuid"]').val(data.uuid);
             modal.find('input[name="name"]').val(data.name);
             modal.find('input[name="server"]').val(data.server);
             modal.find('input[name="token"]').val(data.token);
             modal.find('input[name="user"]').val(data.user);
             modal.find('input[name="namespace"]').val(data.namespace);
-            modal.find('input[name="insecure"]').prop('checked', data.insecure);
+            modal.find('input[id="insecure-update"].form-control').prop('checked', data.insecure.toLowerCase() === "true");
+//            modal.find('input[name="insecure"].form-control').prop('checked', data.insecure.toLowerCase() === "true");
             modal.find('input[name="sa"]').val(data.sa);
 
             //modal.modal('show');
@@ -69,7 +120,7 @@
             var data = JSON.parse(rowData);
 
             var modal = $('#deleteCredentialsModal');
-            modal.find('input[name="id"]').val(data.id);
+            modal.find('input[name="uuid"]').val(data.uuid);
             modal.find('input[name="name"]').val(data.name);
         });
 
@@ -80,10 +131,10 @@
 
     <!-- Nav tabs -->
     <ul class="nav nav-tabs" role="navigation">
-        <li role="navigation" {% if active_tab2=="LastCheckResults" %}class="active" {% endif %}>
+        <li role="navigation" {% if active_tab2=="LastCheckResults" %} class="active" {% endif %}>
             <a href="{{ url_for('home') }}" role="tab">Last check results</a>
         </li>
-        <li role="navigation" {% if active_tab2=="Settings" %}class="active" {% endif %}>
+        <li role="navigation" {% if active_tab2=="Settings" %} class="active" {% endif %}>
             <a href="{{ url_for('settings') }}" role="tab">Settings</a>
         </li>
     </ul>
@@ -127,14 +178,7 @@
 {% block content %}
 <div>
 <!--    <h1>Settings</h1>-->
-    {# <p>Customize your scheduler settings here....</p>
-    <!-- Add your settings content here -->
-    <dl>
-      {% for key, value in config_data.items() %}
-        <dt>{{ key }} : {{ value }}</dt>
-      {% endfor %}
-    </dl> #}
-
+    <!-- The settings tab content -->
      <table id="cluster_config_table" class="table table-striped table-bordered table-hover">
         <thead>
         <tr id="cluster_config_table_header">
@@ -142,8 +186,8 @@
                 <label class="sr-only" for="selectAll">Select all rows</label>
                 <input type="checkbox" id="selectAll" name="selectAll">
             </th>
-            <th class="id">ID</th>
-            <th class="name">cluster name</th>
+            <th class="id">cluster UUID</th>
+            <th class="name">cluster name (alias)</th>
             <th class="server">cluster API (URL)</th>
             <th class="token">token</th>
             <th class="user">user name</th>
@@ -163,7 +207,8 @@
                         <input type="checkbox" id="select{{ i }}" name="select{{ i }}" aria-label="select{{ i }}"  data-json="{{ cluster }}">
                     </td>
                     <td>
-                        <a title="Cluster details" href="{{ url_for('cluster_info', cluster_id=cluster.id) }}">{{ cluster.id }}</a>
+                        {# <a title="Cluster details" href="{{ url_for('cluster_info', cluster_id=cluster.id) }}">{{ cluster.id }}</a> #}
+                        <a title="View Cluster details" href="#" class="view-cluster-link">{{ cluster.uuid }}</a>
                     </td>
                     <td>{{ cluster.name }}</td>
                     <td>{{ cluster.server }}</td>
@@ -189,6 +234,7 @@
         </div>
         <div class="modal-body">
             <input type="hidden" name="action" value="create" />
+          <div class="form-group"><label>Cluster UUID</label><input class="form-control" name="uuid" required></div>
           <div class="form-group"><label>Cluster Name</label><input class="form-control" name="name" required></div>
           <div class="form-group"><label>API Server</label><input class="form-control" name="server" required></div>
           <div class="form-group"><label>Token</label><input class="form-control" name="token"></div>
@@ -198,7 +244,12 @@
           </div>
           <div class="form-group"><label>User</label><input class="form-control" name="user"></div>
           <div class="form-group"><label>Namespace</label><input class="form-control" name="namespace"></div>
-          <div class="checkbox"><label><input type="checkbox" name="insecure"> Skip TLS Verify</label></div>
+          <div class="form-group"><label for="insecure-create">Skip TLS Verify</label>
+<!--              <input type="checkbox" class="form-control" id="insecure" name="insecure" style="width: fit-content;">-->
+            <input type="hidden" id="hidden-insecure-create" name="insecure" value="False">
+            <input type="checkbox" class="form-control" id="insecure-create" style="width: fit-content;"
+                onchange="document.getElementById('hidden-insecure-create').value = this.checked? 'True' : 'False';">
+          </div>
           <div class="form-group"><label>Service Account</label><input class="form-control" name="sa"></div>
         </div>
         <div class="modal-footer">
@@ -210,17 +261,71 @@
   </div>
 </div>
 
+{# READ #}
+<div class="modal fade" id="viewClusterModal" tabindex="-1" role="dialog" aria-labelledby="viewClusterModalLabel">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+        <h4 class="modal-title" id="viewClusterModalLabel">View Cluster Credentials</h4>
+      </div>
+      <div class="modal-body">
+        <form>
+          <div class="form-group">
+            <label for="view-cluster-uuid">Cluster UUID</label>
+            <input type="text" class="form-control" id="view-cluster-uuid" readonly>
+            <label for="view-cluster-name">Cluster Name</label>
+            <input type="text" class="form-control" id="view-cluster-name" readonly>
+          </div>
+          <div class="form-group">
+            <label for="view-api-server">API Server</label>
+            <input type="text" class="form-control" id="view-api-server" readonly>
+          </div>
+          <div class="form-group">
+            <label for="view-token">Token</label>
+            <input type="text" class="form-control" id="view-token" readonly>
+          </div>
+          <div class="form-group">
+            <label for="view-cert">Certificate</label>
+            <textarea class="form-control" id="view-cert" rows="3" readonly></textarea>
+          </div>
+          <div class="form-group">
+            <label for="view-user">User Name</label>
+            <input type="text" class="form-control" id="view-user" readonly>
+          </div>
+          <div class="form-group">
+            <label for="view-namespace">Namespace</label>
+            <input type="text" class="form-control" id="view-namespace" readonly>
+          </div>
+          <div class="checkbox">
+            <label>
+              <input type="checkbox" id="view-skip-tls" disabled> Skip TLS Verify
+            </label>
+          </div>
+          <div class="form-group">
+            <label for="view-service-account">Service Account</label>
+            <input type="text" class="form-control" id="view-service-account" readonly>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-primary" data-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 {# UPDATE #}
 <div class="modal fade" id="updateCredentialsModal" tabindex="-1" role="dialog" aria-labelledby="updateCredentialsModalLabel">
   <div class="modal-dialog" role="document">
     <div class="modal-content">
       <form id="update-credentials-form" method="post" title="update">
         <div class="modal-header">
-          <h4 class="modal-title" id="updateCredentialsModalLabel">Create Credentials</h4>
+          <h4 class="modal-title" id="updateCredentialsModalLabel">Update Credentials</h4>
         </div>
         <div class="modal-body">
             <input type="hidden" name="action" value="update" />
-            <input type="hidden" name="id" />
+            <input type="hidden" name="uuid" />
           <div class="form-group"><label>Cluster Name</label><input class="form-control" name="name" required></div>
           <div class="form-group"><label>API Server</label><input class="form-control" name="server" required></div>
           <div class="form-group"><label>Token</label><input class="form-control" name="token"></div>
@@ -230,7 +335,12 @@
           </div>
           <div class="form-group"><label>User</label><input class="form-control" name="user"></div>
           <div class="form-group"><label>Namespace</label><input class="form-control" name="namespace"></div>
-          <div class="checkbox"><label><input type="checkbox" name="insecure"> Skip TLS Verify</label></div>
+        <div class="form-group"><label for="insecure-update">Skip TLS Verify</label>
+<!--            <input type="checkbox" class="pf-c-switch__input form-control" id="insecure" name="insecure" style="width: fit-content;">-->
+            <input type="hidden" id="hidden-insecure-update" name="insecure" value="False">
+            <input type="checkbox" class="form-control" id="insecure-update" style="width: fit-content;"
+                onchange="document.getElementById('hidden-insecure-update').value = this.checked? 'True' : 'False';">
+        </div>
           <div class="form-group"><label>Service Account</label><input class="form-control" name="sa"></div>
         </div>
         <div class="modal-footer">
@@ -251,8 +361,8 @@
           <h4 class="modal-title" id="deleteCredentialsModalLabel">Delete Credentials</h4>
         </div>
         <div class="modal-body">
-              <input type="hidden" name="action" value="update" />
-            <input type="hidden" name="id" />
+            <input type="hidden" name="action" value="delete" />
+            <input type="hidden" name="uuid" />
           <div class="form-group"><label>Cluster Name</label><input class="form-control" name="name" required readonly></div>
         </div>
         <div class="modal-footer">

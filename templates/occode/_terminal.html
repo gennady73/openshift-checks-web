@@ -1,13 +1,44 @@
 <script>
     $(document).ready(function () {
+
+        const clusterId = $('#cluster-select option:selected').val();
+        if (clusterId === undefined  || clusterId == '') { // no cluster is selected
+            var $ttmElement = $('#terminal-toolbar-message');
+            $ttmElement.text("Warning: No cluster selected.");
+            $ttmElement.show();
+            for (var i = 0; i < 3; i++) { // flash 3 times - refactor it
+              $ttmElement.fadeOut(250).fadeIn(1450);
+            }
+        }
+        else {
+            $("#terminal-toolbar-message").hide();
+            $("#terminal-toolbar-message").text("");
+        }
+
         $("#command").on("input", function () {
             let isEmpty = !$(this).val().trim();
+            const clusterId = $('#cluster-select option:selected').val();
+            let isClusterIdEmpty = (clusterId === undefined  || clusterId == '')
 
-            // Enable executeCmdBtn if input has value, disable if empty
-            $("#executeCmdBtn").prop("disabled", isEmpty);
+            if (isClusterIdEmpty) { // no cluster is selected
+                var $ttmElement = $('#terminal-toolbar-message');
+                $ttmElement.text("Warning: No cluster selected.");
+                $ttmElement.show();
+                for (var i = 0; i < 3; i++) { // flash 3 times - refactor it
+                    $ttmElement.fadeOut(250).fadeIn(1450);
+                    $('#cluster-select').fadeOut(250).fadeIn(1450);
+                }
 
-            // Opposite for testScrBtn (disable when executeCmdBtn is enabled)
-            $("#testScrBtn").prop("disabled", !isEmpty);
+            }
+            else {
+                $("#terminal-toolbar-message").hide();
+                $("#terminal-toolbar-message").text("");
+            }
+            // Enable executeCmdBtn if input has value, disable if empty or no cluster is selected
+            $("#executeCmdBtn").prop("disabled", (isEmpty || isClusterIdEmpty));
+
+            // Opposite for testScrBtn (disable when executeCmdBtn is enabled) or no cluster is selected
+            $("#testScrBtn").prop("disabled", (isClusterIdEmpty || !isEmpty));
         });
     });
 
@@ -19,27 +50,27 @@
           filePath: dataPath
         };
 
-fetch("{{ url_for('occode.execute') }}", {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(dataToSend)
-        })
-        .then(response => {
-            if (!response.ok) {
-                throw new Error('Network response was not ok');
-            }
-            return response.text();
-        })
-        .then(html => {
-            // Replace the content of the specific section
-            document.getElementById('section-to-update').innerHTML = html;
-        })
-        .catch(error => {
-            console.error('Error updating section:', error);
-        });
-    }
+    fetch("{{ url_for('occode.execute') }}", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(dataToSend)
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.text();
+            })
+            .then(html => {
+                // Replace the content of the specific section
+                document.getElementById('section-to-update').innerHTML = html;
+            })
+            .catch(error => {
+                console.error('Error updating section:', error);
+            });
+        }
 </script>
 
 <div id="page-row-2" class="row">
@@ -60,7 +91,11 @@ fetch("{{ url_for('occode.execute') }}", {
             <label for="command">Shell Command:</label>
             <input type="text" id="command" name="command">
             <button class="btn btn-primary" id="executeCmdBtn" type="submit" disabled>Execute</button>
-
+            <label>&nbsp;|&nbsp;</label>
+            <label for="terminal-toolbar-message">Message: </label>
+            <span id="terminal-toolbar-message"
+                  style="border-color: #f0ab00; color: red; border-style: solid; border-width: thin; padding: 3px;">
+            </span>
         </div>
     </form>
                     <div id="section-to-update" class="view-lines" style="font-weight:normal; font-size:13px; height: 300px; overflow-y: scroll; background-color:black;">

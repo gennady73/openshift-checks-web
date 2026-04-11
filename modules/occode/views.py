@@ -1,10 +1,7 @@
-# -*- coding: utf-8 -*-
 import os
 import mimetypes
-from fileinput import filename
-from http.client import responses
 
-from cryptography.x509 import OCSPNoCheck
+#from cryptography.x509 import OCSPNoCheck
 from flask import render_template, abort, jsonify, send_file, g, request, current_app
 from .utils import write_file, dir_tree, get_file_extension
 from . import blueprint
@@ -19,12 +16,12 @@ def index():
         new_resource_path = request.args.get('dtree')
     if new_resource_path is not None:
         g.occode_resource_basepath = f'../openshift-checks/{new_resource_path}'
-    resource_basepath = current_app.config.update({'FLASKCODE_RESOURCE_BASEPATH': g.occode_resource_basepath})
+    #resource_basepath = current_app.config.update({'FLASKCODE_RESOURCE_BASEPATH': g.occode_resource_basepath})
 
-    dirname = os.path.basename(g.occode_resource_basepath)
+    dir_name = os.path.basename(g.occode_resource_basepath)
     dtree = dir_tree(g.occode_resource_basepath, g.occode_resource_basepath + '/')
 
-    return render_template('occode/index.html', dirname=dirname, dtree=dtree)
+    return render_template('occode/index.html', dirname=dir_name, dtree=dtree)
 
 # OCC
 # @blueprint.route('/resource-data/<path:file_path>.txt', methods=['GET', 'HEAD'])
@@ -73,9 +70,9 @@ def update_resource_data(file_path):
         abort(404)
     success = True
     message = 'File saved successfully'
-    resource_data = request.form.get('resource_data', None)
-    if resource_data:
-        success, message = write_file(resource_data, file_path)
+    data: str | None = request.form.get('resource_data', None)
+    if data:
+        success, message = write_file(data, file_path)
     else:
         success = False
         message = 'File data not uploaded'
@@ -83,13 +80,11 @@ def update_resource_data(file_path):
 
 # OCC
 @blueprint.route('/execute', methods=['POST'])
-#@blueprint.route('/occode/execute', methods=['POST'])
 def execute():
-    if request.method == 'POST':
-        command = request.get_json()['command']
-        print(f'### command ###: {command}')
-        file_path = request.get_json()['filePath']
-        print(f'### file_path ###: {file_path}')
+    command = request.get_json()['command']
+    print(f'### command ###: {command}')
+    file_path = request.get_json()['filePath']
+    print(f'### file_path ###: {file_path}')
 
 #       USE OF KUBECONFIG
 #       1. resolve config file:
@@ -97,47 +92,40 @@ def execute():
 #       2. add following line to the cmd:
 #       f"export {kubeconfig} && " \
 
-        if command is None or command == '':
-            command = request.json.get('command', '')
+    if command is None or command == '':
+        command = request.json.get('command', '')
 
-        relative_path = "../openshift-checks"
-        absolute_path = os.path.abspath(relative_path)
-        print(f"working directory : {absolute_path}")
-        # cmd = f"cd {absolute_path} && " \
-        #       f"source ./venv/bin/activate && " \
-        #       f"export INSTALL_CONFIG_PATH={absolute_path}/kubeconfig/install-config.yaml && " \
-        #       f"risu.py --list-plugins"
-        file_path = os.path.join(g.occode_resource_basepath, file_path)
-        is_new_resource = bool(int(request.form.get('is_new_resource', 0)))
-        if not is_new_resource and not (os.path.exists(file_path) and os.path.isfile(file_path)):
-            cmd = f"cd {absolute_path} && " \
-                  f"source ./.venv/bin/activate && " \
-                  f"echo Unable to run {file_path}"
-        elif command is not None and command != '':
-            cmd = f"cd {absolute_path} && " \
-                  f"source ./.venv/bin/activate && " \
-                  f"{command}"
-        else:
+    relative_path = "../openshift-checks"
+    absolute_path = os.path.abspath(relative_path)
+    print(f"working directory : {absolute_path}")
+    file_path = os.path.join(g.occode_resource_basepath, file_path)
+    is_new_resource = bool(int(request.form.get('is_new_resource', 0)))
+    if not is_new_resource and not (os.path.exists(file_path) and os.path.isfile(file_path)):
+        cmd = f"cd {absolute_path} && " \
+              f"source ./.venv/bin/activate && " \
+              f"echo Unable to run {file_path}"
+    elif command is not None and command != '':
+        cmd = f"cd {absolute_path} && " \
+              f"source ./.venv/bin/activate && " \
+              f"{command}"
+    else:
 
-            cmd = f"cd {absolute_path} && " \
-                  f"source ./.venv/bin/activate && " \
-                  f"export INSTALL_CONFIG_PATH={absolute_path}/kubeconfig/install-config.yaml && " \
-                  f"./openshift-checks.sh --single {file_path}"
+        cmd = f"cd {absolute_path} && " \
+              f"source ./.venv/bin/activate && " \
+              f"export INSTALL_CONFIG_PATH={absolute_path}/kubeconfig/install-config.yaml && " \
+              f"./openshift-checks.sh --single {file_path}"
 
-        # print(f"command executed : {cmd}")
+    # print(f"command executed : {cmd}")
 
-        command = cmd
+    command = cmd
 
-        print(f'### command ###: {command}')
-        # Run the command using subprocess
-        try:
-            result = subprocess.check_output(command, shell=True, stderr=subprocess.STDOUT, text=True)
-            #return render_template('index.html', result=result, command=command)
-            resultHTML = render_template('occode/_terminal_output.html', result=result, command=command)
-            print(f'### resultHTML ###\n{resultHTML}')
-            return resultHTML;
-        except subprocess.CalledProcessError as e:
-            #return render_template('index.html', result=e.output, command=command, error=True)
-            resultHTML = render_template('occode/_terminal_output.html', result=e.output, command=command, error=True)
-            print (f'### resultHTML ###\n{resultHTML}')
-            return resultHTML;
+    print(f'### command ###: {command}')
+    # Run the command using subprocess
+    try:
+        result_output = subprocess.check_output(command, shell=True, stderr=subprocess.STDOUT, text=True)
+    except subprocess.CalledProcessError as e:
+        result_output = e.output
+
+    result_html = render_template('occode/_terminal_output.html', result=result_output, command=command, error=True)
+    print (f'### result HTML ###\n{result_html}')
+    return result_html

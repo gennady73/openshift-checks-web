@@ -4,7 +4,7 @@ import os
 import time
 import urllib.request
 from flask import Blueprint, render_template, url_for, request, redirect, flash
-from flask import Flask
+from flask import Flask, session
 from flask_apscheduler import APScheduler
 from apscheduler.events import EVENT_JOB_EXECUTED, EVENT_JOB_ERROR, EVENT_JOB_ADDED, EVENT_JOB_REMOVED, \
     EVENT_JOB_MODIFIED, EVENT_JOB_SUBMITTED
@@ -46,11 +46,14 @@ def scheduler_home():
 
     scheduler_state['paused'] = scheduler_global_state['paused']
     jobs = scheduler_get_jobs_data()
+    selected_cluster = session.get('selected_cluster', '0')
     return render_template('list.html', scheduler_state=scheduler_state, active_tab="Scheduler",
                            jobs=jobs,
                            active_tab2="JobList",
                            cluster_info_list=app.cluster_info_list,
-                           clusters=app.clusters)
+                           clusters=app.clusters,
+                           selected_cluster=selected_cluster)
+
 
 
 @scheduler_blueprint.route('/action', methods=['GET', 'POST'])
@@ -123,8 +126,12 @@ def scheduler_job(job_id):
     except Exception as ex:
         logging.getLogger('apscheduler').error(f'Failed to get job log: {ex}')
 
+    selected_cluster = session.get('selected_cluster', '0')
+
     return render_template('job.html', job_id=job_id, job=job, jobstore=jobstore,
-                           log=log, max_log_entries=max_log_entries, job_runs=f"{job_runs}", job_fails=f"{job_fails}")
+                           log=log, max_log_entries=max_log_entries, job_runs=f"{job_runs}", job_fails=f"{job_fails}",
+                           cluster_info_list=app.cluster_info_list,
+                           selected_cluster=selected_cluster)
 
 
 @scheduler_blueprint.route('/start_job/<job_id>')
@@ -184,7 +191,10 @@ def scheduler_jobs_old():
     #     jobs = []
     # jobs_ = scheduler.scheduler.get_jobs(jobstore="default", pending=True)
     jobs = scheduler_get_jobs_data()
-    return render_template('list.html', jobs=jobs, active_tab2="JobList")
+    selected_cluster = session.get('selected_cluster', '0')
+    return render_template('list.html', jobs=jobs, active_tab2="JobList",
+                           cluster_info_list=app.cluster_info_list,
+                           selected_cluster=selected_cluster)
 
 
 def get_job_data(form, field_filter=None):
@@ -347,7 +357,11 @@ def scheduler_jobs():
         scheduler.remove_job(job_data.get('name'), job_data.get('jobstore'))
 
     jobs = scheduler_get_jobs_data()
-    return render_template('list.html', jobs=jobs, active_tab2="JobList")
+
+    selected_cluster = session.get('selected_cluster', '0')
+    return render_template('list.html', jobs=jobs, active_tab2="JobList",
+                           cluster_info_list=app.cluster_info_list,
+                           selected_cluster=selected_cluster)
 
 
 @scheduler_blueprint.route('/settings')
@@ -368,8 +382,13 @@ def scheduler_settings():
         config_data = json.load(file)
         logging.getLogger('apscheduler').debug(f"scheduler configuration: ${config_data}")
 
+    selected_cluster = session.get('selected_cluster', '0')
+
     return render_template('schedule/settings.html', config_data=config_data,
-                           scheduler_state=scheduler_state, active_tab="Scheduler", active_tab2="Settings")
+                           scheduler_state=scheduler_state, active_tab="Scheduler", active_tab2="Settings",
+                           cluster_info_list=app.cluster_info_list,
+                           selected_cluster=selected_cluster)
+
 
 
 def scheduler_get_jobs_data():

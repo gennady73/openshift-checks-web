@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-VENV_DIR=venv
+VENV_DIR=.venv
 
 if [ -d "$VENV_DIR" ]; then
   echo "### Remove existing venv directory: $VENV_DIR ###"

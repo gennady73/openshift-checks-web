@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, Flask
+from flask import Blueprint, render_template, Flask, session
 #import flaskcode
 import  sys
 import os
@@ -37,7 +37,7 @@ import os
 import mimetypes
 from fileinput import filename
 
-from cryptography.x509 import OCSPNoCheck
+# from cryptography.x509 import OCSPNoCheck
 from flask import render_template, abort, jsonify, send_file, g, request, current_app
 from modules.occode.utils import write_file, dir_tree, get_file_extension
 
@@ -59,8 +59,12 @@ def code_editor_home():
     dtree = dir_tree(g.occode_resource_basepath, g.occode_resource_basepath + '/')
     #return render_template('flaskcode/index.html', dirname=dirname, dtree=dtree)
     # return render_template('editor/editor.html', active_tab="EditorR", active_tab2="JobList", dirname=dirname, dtree=dtree)
+
+    selected_cluster = session.get('selected_cluster', '0')
+
     return render_template( 'editor/editor.html', active_tab="EditorR", active_tab2="JobList",
                             dirname=dirname,
                             dtree=dtree,
                             cluster_info_list=app.cluster_info_list,
+                            selected_cluster=selected_cluster,
                             clusters=app.clusters)

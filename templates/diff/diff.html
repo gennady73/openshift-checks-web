@@ -1,0 +1,321 @@
+{% extends 'diff/base.html' %}
+
+{% block title %}
+    {{ super() }}
+{% endblock %}
+
+{% block styles %}
+{{ super() }}
+
+<style>
+  pre {
+    white-space: pre-wrap;
+  }
+
+  #cat_list {
+    padding-top: 1.5rem;
+    padding-bottom: 1.5rem;
+  }
+
+  #label_check_all {
+    margin-bottom: 1.5rem;
+  }
+
+  #category-list {
+    padding: 1.5rem;
+    margin: 1.5rem;
+  }
+
+  .title {
+    font-size: 2.5rem;
+    font-family: "Overpass", sans-serif;
+    top: 10px;
+    position: relative;
+  }
+
+  .alert strong {
+    text-transform: capitalize;
+  }
+
+  .navbar-pf .navbar-brand img {
+    display: inline;
+  }
+
+  .navbar {
+    width: 100%;
+  }
+
+  .navbar-header {
+    float: left;
+    height: 58px;
+  }
+
+  .badge-danger {
+    color: #fff;
+    background-color: #cc0000;
+  }
+
+  .badge-info {
+    color: #fff;
+    background-color: #2b18f9;
+  }
+
+  .badge-skipped {
+    color: #fff;
+    background-color: #808080;
+  }
+
+  .badge-success {
+    color: #fff;
+    background-color: #3f9c35;
+  }
+
+  .badge {
+    display: inline-block;
+    padding: 0.1875rem 0.4375rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+    line-height: 1;
+    text-align: center;
+    white-space: nowrap;
+    vertical-align: baseline;
+    margin-left: 0px;
+  }
+
+  input[type="search"]::-webkit-search-cancel-button {
+    -webkit-appearance: searchfield-cancel-button;
+  }
+
+  .toolbar-pf-results {
+    border-top: 0px solid #d1d1d1;
+    margin-top: 10px;
+  }
+
+  .row-cards-pf {
+    margin-left: 0;
+    margin-right: 0;
+  }
+
+  .toolbar-pf {
+    background: #fff;
+    border-bottom: 0px solid #d1d1d1;
+    box-shadow: 0 1px 0 rgba(3, 3, 3, 0.045);
+    padding-top: 10px;
+  }
+
+  .category-badge {
+    margin-right: 10px;
+  }
+  /* click the header unless the mouse cursor changes, so it acts like a button */
+  tr[id$="_header"] { cursor: pointer; }
+</style>
+
+<style>
+/* Increase specificity to override PatternFly 3 defaults */
+.list-group.list-view-pf.list-group-item.row-degraded {
+    background-color: #fff3f3!important;
+    border-left: 4px solid #c9190b!important;
+}
+.list-group.list-view-pf.list-group-item.row-resolved {
+    background-color: #f3faf2!important;
+    border-left: 4px solid #3e8635!important;
+}
+.list-group.list-view-pf.list-group-item.row-new {
+    background-color: #e7f1fa!important;
+    border-left: 4px solid #06c!important;
+}
+.list-group.list-view-pf.list-group-item.row-changed {
+    background-color: #fdf7e3!important;
+    border-left: 4px solid #f0ab00!important;
+}
+.list-group.list-view-pf.list-group-item.row-removed {
+    background-color: #f0f0f0!important;
+    border-left: 4px solid #8a8d90!important;
+    text-decoration: line-through;
+}
+.list-group.list-view-pf.list-group-item.row-unchanged {
+    opacity: 0.6;
+}
+
+/* Ensure PatternFly's expanded/active state doesn't wipe out our custom borders */
+.list-group.list-view-pf.list-group-item.row-changed.list-view-pf-expand-active {
+    background-color: #fcf0c7!important; /* Slightly darker gold for active state */
+    border-left: 4px solid #f0ab00!important;
+}
+.list-group.list-view-pf.list-group-item.row-degraded.list-view-pf-expand-active {
+    background-color: #ffe6e6!important;
+    border-left: 4px solid #c9190b!important;
+}
+.list-group.list-view-pf.list-group-item.row-resolved.list-view-pf-expand-active {
+    background-color: #e6f5e4!important;
+    border-left: 4px solid #3e8635!important;
+}
+
+/* Badges */
+.diff-badge {
+    font-size: 11px;
+    padding: 2px 6px;
+    border-radius: 10px;
+    display: table-caption; /*margin-left: 10px;*/
+    font-weight: bold;
+}
+.badge-degraded { background: #c9190b; color: white; }
+.badge-resolved { background: #3e8635; color: white; }
+.badge-new { background: #06c; color: white; }
+.badge-changed { background: #f0ab00; color: white; } /* Added missing changed badge */
+.badge-removed { background: #8a8d90; color: white; }
+</style>
+
+<!-- DIFF STYLES -->
+<style>
+    /* Force background colors even when PatternFly applies its active/expanded blue state */
+   .list-group-item.row-degraded,.list-group-item.row-degraded.list-view-pf-expand-active {
+        background-color: #fff3f3!important;
+        border-left: 4px solid #c9190b!important;
+    }
+   .list-group-item.row-resolved,.list-group-item.row-resolved.list-view-pf-expand-active {
+        background-color: #f3faf2!important;
+        border-left: 4px solid #3e8635!important;
+    }
+   .list-group-item.row-new,.list-group-item.row-new.list-view-pf-expand-active {
+        background-color: #e7f1fa!important;
+        border-left: 4px solid #06c!important;
+    }
+   .list-group-item.row-changed,.list-group-item.row-changed.list-view-pf-expand-active {
+        background-color: #fdf7e3!important;
+        border-left: 4px solid #f0ab00!important;
+    }
+   .list-group-item.row-removed {
+        background-color: #f0f0f0!important;
+        border-left: 4px solid #8a8d90!important;
+        text-decoration: line-through;
+    }
+   .list-group-item.row-unchanged {
+        opacity: 0.6;
+    }
+
+    /* Badges */
+   .diff-badge {
+        font-size: 11px;
+        padding: 2px 6px;
+        border-radius: 10px;
+        margin-left: 10px;
+        font-weight: bold;
+        display: inline-block;
+    }
+   .badge-degraded { background-color: #c9190b; color: white; }
+   .badge-resolved { background-color: #3e8635; color: white; }
+   .badge-new { background-color: #06c; color: white; }
+   .badge-changed { background-color: #f0ab00; color: white; }
+   .badge-removed { background-color: #8a8d90; color: white; }
+</style>
+
+<!-- MONACO EDITOR STYLES -->
+<style>
+    /* Push the modal down slightly so it isn't hugging the top navigation bar */
+    #monacoDiffModal.modal-dialog {
+        margin-top: 60px;
+    }
+
+</style>
+    <link rel="stylesheet" type="text/css"
+      href="{{ url_for('static_ext2_blueprint.static',
+      filename='cdnjs.cloudflare.com/ajax/libs/bootstrap-select/1.13.1/css/bootstrap-select.min.css') }}">
+
+<link rel="stylesheet" type="text/css"
+      href="{{ url_for('static_ext2_blueprint.static',
+        filename='cdnjs.cloudflare.com/ajax/libs/bootstrap-datetimepicker/4.14.45/css/bootstrap-datetimepicker.min.css') }}">
+
+{% endblock %}
+
+{% block scripts %}
+    {{ super() }}
+<!-- Monaco Editor-Diff scripts -->
+<script type="text/javascript" src="{{ url_for('occode.static', filename='vendor/jquery-contextMenu/jquery.contextMenu.min.js') }}"></script>
+<script type="text/javascript" src="{{ url_for('occode.static', filename='vendor/monaco-editor/min/vs/loader.js') }}"></script>
+<script>
+    // Configure the AMD loader to point to the base Monaco directory
+    require.config({ paths: { 'vs': "{{ url_for('occode.static', filename='vendor/monaco-editor/min/vs') }}"} });
+
+    // Pre-load the core editor library in the background so it's ready when the user clicks the button
+    require(['vs/editor/editor.main'], function() {
+        window.monacoReady = true;
+    });
+</script>
+
+
+<script>
+//  Date Time Picker From
+//  $(function () {
+//    $('#filterFromDate').datetimepicker({
+//      allowInputToggle: true,
+//      showTodayButton: true,
+//      toolbarPlacement: 'bottom',
+//      sideBySide: true,
+//      icons: {
+//        today: 'today-button-pf'
+//      }
+//    });
+//  });
+//
+//  Date Time Picker To
+//  $(function () {
+//    $('#filterToDate').datetimepicker({
+//      allowInputToggle: true,
+//      showTodayButton: true,
+//      toolbarPlacement: 'bottom',
+//      sideBySide: true,
+//      icons: {
+//        today: 'today-button-pf'
+//      }
+//    });
+//  });
+
+// relative time picker
+//$(function () {
+//  // Initialize the PatternFly/Bootstrap select
+//  $('#relativeTimeFilter').selectpicker();
+//
+//  $('#relativeTimeFilter').on('changed.bs.select', function (e, clickedIndex, isSelected, previousValue) {
+//    let selectedRange = $(this).val();
+//
+//    // Default bounds (negative infinity to positive infinity)
+//    let fromDate = null;
+//    let toDate = moment(); // "Now" is always the upper bound for a relative range
+//
+//    if (selectedRange!== 'none') {
+//      // Split the value (e.g., "15-minutes") into amount and unit
+//      let parts = selectedRange.split('-');
+//      let amount = parseInt(parts, 10);
+//      let unit = parts[1];
+//
+//      // Calculate the exact 'From' time using moment.js
+//      fromDate = moment().subtract(amount, unit);
+//    }
+//
+//    // Pass fromDate and toDate to your existing options filtering algorithm here
+//      console.debug("fromDate: ", fromDate);
+//      console.debug("toDate: ", toDate);
+//    // filterArtifactOptions(fromDate, toDate);
+//  });
+//});
+</script>
+
+<script language="JavaScript" src="{{ url_for('static_default_blueprint.static', filename='js/osc-diff.js') }}"></script>
+
+
+{% endblock %}
+
+{% block head %}
+    {{ super() }}
+{% endblock %}
+
+{% block content_special %}
+    {% include 'partials/diff/tab_nav.html' %}
+{% endblock %}
+
+{% block content %}
+<div id="result-container" class="occ-result-container">
+    {% include 'diff-result.html' %}
+</div>
+{% endblock %}

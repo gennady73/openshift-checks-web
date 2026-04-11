@@ -4,12 +4,25 @@
     {{ super() }}
 {% endblock %}
 
+{% block styles %}
+    {{ super() }}
+{% endblock %}
+
+{% block scripts %}
+    {{ super() }}
+<script src="{{ url_for('static_ext2_blueprint.static',
+            filename='cdnjs.cloudflare.com/ajax/libs/flat-ui/1.1.0/js/bootstrap-tooltip.js') }}"></script>
+
+<script src="{{ url_for('static_default_blueprint.static', filename='js/osc-common.js') }}"></script>
+{% endblock %}
+
 {% block head %}
     {{ super() }}
 {% endblock %}
 
+{% block content_special %}
+{% endblock %}
+
 {% block content %}
-<div id="result-container" class="occ-result-container">
-    {% include 'osc.local.html' %}
-</div>
+<div id="result-container" class="occ-result-container"></div>
 {% endblock %}

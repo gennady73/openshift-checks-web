@@ -11,6 +11,7 @@ class ClusterCredential(Base):
     __tablename__ = 'cluster_credential'
 
     id = Column(Integer, primary_key=True, autoincrement=True)
+    uuid = Column(String(255), unique=True, nullable=False)
     name = Column(String(255), unique=True, nullable=False)
     server = Column(String(255), nullable=False)
     token = Column(String(2048), nullable=False)
@@ -30,6 +31,7 @@ class ClusterCredential(Base):
     def to_dict(self):
         return {
             "id": self.id,
+            "uuid": self.uuid,
             "name": self.name,
             "server": self.server,
             "token": self.token,

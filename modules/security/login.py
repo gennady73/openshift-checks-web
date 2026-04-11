@@ -90,25 +90,26 @@ def extract_login_command(cluster_name: str) -> dict:
     raise ValueError(f"Cluster '{cluster_name}' not found in any kubeconfig")
 
 
-def oc_login2(cluster_name: str, credentials_store:ClusterCredentialStore):
-    credentials:ClusterCredential = credentials_store.get_credential(credential_id=cluster_name)
+def oc_login2(cluster_uuid: str, credentials_store:ClusterCredentialStore):
+    credentials:ClusterCredential = credentials_store.get_credential(credential_id=cluster_uuid)
 
     cmd = ["oc", "login", f"--token={credentials.token}", f"--server={credentials.server}"]
     if credentials.insecure:
         cmd.append("--insecure-skip-tls-verify=true")
 
-    LOGGER.debug(f"Login command constructed for cluster '{cluster_name}': {' '.join(cmd)}")
+    LOGGER.debug(f"Login command constructed for cluster '{credentials.name}': {' '.join(cmd)}")
     try:
         proc = subprocess.run(cmd, check=True, capture_output=True, text=True)
 
         if proc.returncode == 0:
-            LOGGER.info(f"Login to OpenShift cluster successful: {cluster_name}")
+            LOGGER.info(f"Login to OpenShift cluster successful: {credentials.name} (UUID={credentials.uuid}).")
             LOGGER.info(f"{proc.stdout}")
         else:
-            LOGGER.error(f"Login to OpenShift cluster failed: {cluster_name}")
+            LOGGER.error(f"Login to OpenShift cluster failed: {credentials.name} (UUID={credentials.name}).")
             LOGGER.info(f"{proc.stderr}")
 
         return {
+            "uuid": credentials.uuid,
             "command": ' '.join(cmd),
             "user": credentials.user,
             "cluster": credentials.name,
@@ -116,11 +117,14 @@ def oc_login2(cluster_name: str, credentials_store:ClusterCredentialStore):
             "kubeconfig": ''
         }
     except subprocess.CalledProcessError as e:
-        LOGGER.error(f"Login failed for cluster {cluster_name}: {e.stderr or str(e)}")
+        LOGGER.error(f"Login failed for cluster {credentials.name}: {e.stderr or str(e)}")
         return {"error": e.stderr or str(e)}
 
     except Exception as e:
-        LOGGER.error(f"Unexpected error during login to {cluster_name}: {str(e)}")
+        if credentials is not None:
+            LOGGER.error(f"Unexpected error during login to cluster {credentials.name}: {str(e)}")
+        else:
+            LOGGER.error(f"Unexpected error during login to cluster (UUID={cluster_uuid}): {str(e)}")
         return {"error": str(e)}
 
 def oc_login(cluster_name: str):

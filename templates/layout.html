@@ -1,15 +1,22 @@
 <!DOCTYPE html>
 <html lang="en">
-{% block head %}
+
 <head>
+
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}OCChecks{% endblock %}</title>
     <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}">
+
     <link rel="stylesheet" href="{{ url_for('static', filename='css/osc-web.css') }}">
 
     <link rel="stylesheet" type="text/css"
           href="{{ url_for('static_ext2_blueprint.static',
           filename='cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/css/bootstrap.min.css') }}">
+
+    <link rel="stylesheet" type="text/css"
+      href="{{ url_for('static_ext2_blueprint.static',
+      filename='cdnjs.cloudflare.com/ajax/libs/bootstrap-select/1.13.1/css/bootstrap-select.min.css') }}">
 
     <link rel="stylesheet" type="text/css"
           href="{{ url_for('static_ext2_blueprint.static',
@@ -24,11 +31,14 @@
             filename='cdnjs.cloudflare.com/ajax/libs/patternfly/3.59.3/css/patternfly-additions.min.css') }}">
 
     <link rel="stylesheet" type="text/css"
-          href="{{ url_for('static_ext2_blueprint.static', filename='fonts.googleapis.com/css') + '?family=Overpass' }}">
+          href="{{ url_for('static_ext2_blueprint.static', filename='fonts.googleapis.com/css', family='Overpass') }}">
 
     <link rel="stylesheet" type="text/css"
           href="{{ url_for('static_ext2_blueprint.static',
             filename='cdnjs.cloudflare.com/ajax/libs/bootstrap-validator/0.5.2/css/bootstrapValidator.min.css') }}">
+
+    <!-- Placeholder for child-specific styles -->
+    {% block styles %}{% endblock %}
 
     <script src="{{ url_for('static_ext2_blueprint.static',
             filename='cdnjs.cloudflare.com/ajax/libs/jquery/3.6.4/jquery.min.js') }}"></script>
@@ -38,6 +48,16 @@
 
     <script src="{{ url_for('static_ext2_blueprint.static',
             filename='cdnjs.cloudflare.com/ajax/libs/patternfly/3.59.3/js/patternfly.min.js') }}"></script>
+
+        <!-- Assets for creating a date-time element -->
+    <script src="{{ url_for('static_ext2_blueprint.static',
+            filename='cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.4/moment-with-locales.min.js') }}">
+    </script>
+    <script src="{{ url_for('static_ext2_blueprint.static',
+            filename='cdnjs.cloudflare.com/ajax/libs/bootstrap-datetimepicker/4.14.45/js/bootstrap-datetimepicker.min.js') }}">
+    </script>
+    <!-- /Assets for creating a date-time element -->
+
     <script src="{{ url_for('static_ext2_blueprint.static',
             filename='cdnjs.cloudflare.com/ajax/libs/bootstrap-select/1.13.1/js/bootstrap-select.min.js') }}"></script>
 
@@ -51,11 +71,8 @@
         filename='cdnjs.cloudflare.com/ajax/libs/bootstrap-validator/0.11.9/js/validator.min.js') }}">
     </script>
 
-    <title>{% block title %}OCChecks{% endblock %}</title>
-
-
     <script language="JavaScript">
-        console.log('Script is running.');
+
         var loggedIn;
         function toggleLoginLogout() {
             var loginLogoutButton = document.getElementById('loginLogoutButton');
@@ -108,6 +125,9 @@
 
         // handler for cluster selection combo
         $(document).ready(function () {
+            const selected_cluster = "{{ selected_cluster }}";
+            console.log('selected cluster id: ', selected_cluster);
+
             $('#cluster-select').on('change', function () {
               const selectedCluster = $(this).val();
               $.ajax({
@@ -164,14 +184,19 @@
         });
 
     </script>
+    {#
     <script src="{{ url_for('static_ext2_blueprint.static',
             filename='cdnjs.cloudflare.com/ajax/libs/jquery/3.6.4/jquery.min.js') }}"></script>
     <script src="{{ url_for('static_ext2_blueprint.static',
             filename='cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/js/bootstrap.min.js') }}"></script>
     <script src="{{ url_for('static_ext2_blueprint.static',
             filename='cdnjs.cloudflare.com/ajax/libs/patternfly/3.59.3/js/patternfly.min.js') }}"></script>
+    #}
+    <!-- Placeholder for child-specific scripts -->
+    {% block scripts %}{% endblock %}
 </head>
 <body>
+{% block head %}
 <header>
     <nav class="navbar navbar-pf-vertical navbar-fixed-top">
         <div class="navbar-header">
@@ -196,6 +221,9 @@
                 </li> #}
                 <li {% if active_tab=="Editor" %} class="active" {% endif %}>
                     <a href="{{ url_for('editor.code_editor_home') }}" role="navigation">Editor</a>
+                </li>
+                <li {% if active_tab=="Diff" %} class="active" {% endif %}>
+                    <a href="{{ url_for('diff.diff_home') }}" role="navigation">Diff</a>
                 </li>
                 <li {% if active_tab=="HatGPT" %} class="active" {% endif %}>
                     <a href="#" role="navigation">Hat GPT</a>
@@ -228,6 +256,7 @@
             #}
 
             {# ### Cluster selection drop-down menu ### #}
+
             <ul class="nav navbar-nav occ-navbar-nav occ-nav navbar-right" style="margin-right:5px;">
                 <li class="nav navbar-nav occ-navbar-nav occ-nav">
                     <span id="project-location" class="fa" style="padding-top: 12px;">
@@ -235,9 +264,11 @@
                             aria-describedby="project-location"
                             data-error="The value is empty!" data-minlength="3" required >
                              <option value="">select cluster</option>
-                          {% for cluster in cluster_info_list %}
-                            <option value="{{ cluster.id }}">{{ cluster.name }}</option>
-                          {% endfor %}
+                             {% for cluster in cluster_info_list %}
+                             <option value="{{ cluster.uuid }}" {% if selected_cluster == cluster.uuid|string %} selected="selected" {% endif %}>
+                                {{ cluster.name }}
+                             </option>
+                             {% endfor %}
                         </select>
                     </span>
                 </li>
@@ -249,9 +280,6 @@
 {% endblock %}
 
 {% block content_special %}
-<!-- TAB NAV BEGIN -->
-    {% include 'partials/home/tab_nav.html' %}
-<!-- TAB NAV END -->
 {% endblock %}
 
 {% block content %}

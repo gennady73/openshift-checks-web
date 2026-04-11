@@ -1,0 +1,201 @@
+<div class="layout-pf layout-pf-fixed">
+  <!-- body -->
+    <!-- container -->
+    <div class="container-cards-pf collapsed-nav">
+      <div id="alert_list"></div>
+      <div class="clearfix toolbar-pf">
+      <div class="row toolbar-pf">
+        <div class="col-sm-12">
+          <form class="toolbar-pf-actions">
+            <div class="form-group toolbar-pf-filter">
+              <label class="sr-only" for="filter_text">Filter By Name</label>
+              <div class="input-group">
+                <div class="input-group-btn">
+                  <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                    Name <span class="caret"></span>
+                  </button>
+                  <ul class="dropdown-menu">
+                    <li class="selected"><a href="#">Name</a></li>
+                  </ul>
+                </div>
+                <input type="search" class="form-control" id="filter_text" placeholder="Filter...">
+              </div>
+            </div>
+
+            <div class="form-group">
+              <div class="dropdown btn-group">
+                <button id="plugin-sort" type="button" data-sortfield="priority" class="btn btn-default dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" data-toggle="tooltip" data-placement="top" title="Filter diagnostic results by execution priority or severity level.">
+                  Priority <span class="caret"></span>
+                </button>
+                <ul class="dropdown-menu">
+                  <li class="selected"><a href="#" class="plugin-sort-field">Priority</a></li>
+                  <li><a href="#" class="plugin-sort-field">State</a></li>
+                  <li><a href="#" class="plugin-sort-field">Name</a></li>
+                </ul>
+              </div>
+              <button id="sort-btn" class="btn-link btn-no-border" type="button" data-toggle="tooltip" data-placement="top" title="Reverse sort order" style="padding: initial;">
+                <span data-direction="desc" id="sortDirection" class="fa fa-sort-amount-desc"></span>
+              </button>
+            </div>
+
+            <div class="form-group">
+              <div class="dropdown btn-group">
+                <button class="btn btn-default dropdown-toggle" type="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" data-toggle="tooltip" data-placement="top" title="Filter by execution state">
+                  <span class="fa fa-filter"></span> Status <span class="caret"></span>
+                </button>
+                <ul class="dropdown-menu table-view-pf-colvis-menu">
+                  <li><input type="checkbox" value="info" data-filter="info" class="nx-check-item nx-filter-status" checked /><label> Info</label></li>
+                  <li><input type="checkbox" value="okay" data-filter="okay" class="nx-check-item nx-filter-status" /><label> Okay</label></li>
+                  <li><input type="checkbox" value="failed" data-filter="failed" class="nx-check-item nx-filter-status" checked /><label> Failed</label></li>
+                  <li><input type="checkbox" value="skipped" data-filter="skipped" class="nx-check-item nx-filter-status" /><label> Skipped</label></li>
+                </ul>
+              </div>
+            </div>
+
+            <div class="toolbar-pf-action-right">
+              <div class="form-group">
+<!--                <div id="otherJsons" class="dropdown btn-group hidden">-->
+<!--                  <button id="jsons" type="button" data-json="" class="btn btn-default dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"></button>-->
+
+<!--                  <ul class="dropdown-menu dropdown-menu-right"></ul>-->
+<!--                </div>-->
+
+                <select class="selectpicker form-control input-medium" id="otherJsons"
+                                data-live-search="true"
+                                data-width="300px"
+                                data-size="10"
+                                aria-describedby="check-results-to"
+                                data-error="The value is empty!" data-minlength="6" required >
+
+<!--                    <option value="" data-content=""></option>-->
+                </select>
+
+                <button id="categories-btn" type="button" class="btn btn-default" data-toggle="modal" data-target="#modal-categories" data-toggle="tooltip" data-placement="top" title="Select specific infrastructure components (e.g., storage, network) to include in the report.">
+                  Categories
+                </button>
+
+                <button type="button" class="btn btn-default" id="expandAll">
+                  Expand All
+                </button>
+                <button class="btn btn-primary" id="toggle-baseline-btn" title="Toggle Baseline Status">
+                    <span class="fa fa-star-o" id="baseline-icon"></span> Baseline
+                </button>
+              </div>
+            </div>
+
+          </form>
+
+          <div class="row toolbar-pf-results">
+            <div class="col-sm-12">
+              <h5>
+                Total tests <span id="numtests"></span> - Filtered results: <span id="numresults"></span>
+              </h5>
+            </div>
+          </div>
+        </div>
+        <!-- /col -->
+      </div>
+      <!-- /row -->
+      </div>
+
+      <div class="clearfix">
+        <div class="col-sm">
+          <table
+            id="metadata_table_risu"
+            class="table table-hover table-bordered"
+          >
+            <thead>
+              <tr id="metadata_table_risu_header">
+                <th colspan="2" class="text-left">Runtime Metadata</th>
+              </tr>
+            </thead>
+            <tbody id="metadata_table_risu_body" style="display: none"></tbody>
+          </table>
+        </div>
+        <!-- /col -->
+      </div>
+      <!-- /row -->
+      <div class="clearfix row-cards-pro">
+        <!-- Table HTML -->
+        <table
+          class="table table-striped table-bordered table-hover"
+          id="table1"
+        >
+          <thead>
+            <tr id="profile_table_risu_header">
+              <th>Profiles</th>
+            </tr>
+          </thead>
+          <tbody id="profile_table_risu_body" style="">
+            <tr
+              id="profile-group"
+              class="list-group list-view-pf list-view-pf-view"
+            ></tr>
+          </tbody>
+        </table>
+      </div>
+      <!-- /row -->
+      <div class="clearfix row-cards-pf">
+        <!-- Table HTML -->
+        <table
+          class="table table-striped table-bordered table-hover"
+          id="table2"
+        >
+          <thead>
+            <tr id="report_table_risu_header">
+              <th>Report</th>
+            </tr>
+          </thead>
+          <tbody id="report_table_risu_body" style="">
+            <tr
+              id="list-group"
+              class="list-group list-view-pf list-view-pf-view"
+            ></tr>
+          </tbody>
+        </table>
+      </div>
+      <!-- /row-cards-pf -->
+    </div>
+    <!-- /container -->
+    <div
+      class="modal fade"
+      id="modal-categories"
+      tabindex="-1"
+      role="dialog"
+      aria-labelledby="modalCategoriesLabel"
+      aria-hidden="true"
+    >
+      <div class="modal-dialog" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="modalCategoriesLabel">
+              Category Filter
+            </h5>
+            <button
+              type="button"
+              class="close"
+              data-dismiss="modal"
+              aria-label="Close"
+            >
+              <span aria-hidden="true">&times;</span>
+            </button>
+          </div>
+          <div id="category-list" class="modal-body"></div>
+          <div class="modal-footer">
+            <button
+              type="button"
+              class="btn btn-secondary"
+              data-dismiss="modal"
+            >
+              Close
+            </button>
+          </div>
+          <!-- /modal-footer -->
+        </div>
+        <!-- /modal-content -->
+      </div>
+      <!-- /modal-dialog -->
+    </div>
+    <!-- /modal -->
+  <!-- /body -->
+</div>

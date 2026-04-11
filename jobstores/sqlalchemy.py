@@ -217,9 +217,10 @@ class ClusterCredentialStore(BaseCredentialStore):
         if credential.certificate:
             self._validate_certificate(credential.certificate)
         with self._session() as session:
-            existing = session.get(ClusterCredential, credential.id)
+            stmt = select(ClusterCredential).where(ClusterCredential.uuid == credential.uuid)
+            existing = session.execute(stmt).scalar_one_or_none()
             if not existing:
-                raise ValueError(f"Credential with ID {credential.id} not found")
+                raise ValueError(f"Credential with ID {credential.uuid} not found")
             for attr, value in vars(credential).items():
                 if attr.startswith('_'): continue  # skip internal SQLAlchemy fields
                 setattr(existing, attr, value)
@@ -228,16 +229,21 @@ class ClusterCredentialStore(BaseCredentialStore):
 
     def delete_credential(self, credential_id):
         with self._session() as session:
-            credential = session.get(ClusterCredential, credential_id)
+            stmt = select(ClusterCredential).where(ClusterCredential.uuid == credential_id)
+            credential = session.execute(stmt).scalar_one_or_none()
+
             if not credential:
-                raise ValueError(f"Credential with ID {credential_id} not found")
+                raise ValueError(f"Credential with UUID {credential_id} not found")
             session.delete(credential)
             session.commit()
-            LOGGER.info(f"Deleted credential with ID: {credential_id}")
+            LOGGER.info(f"Deleted credential with UUID: {credential_id}")
 
     def get_credential(self, credential_id):
         with self._session() as session:
-            return session.get(ClusterCredential, credential_id)
+            stmt = select(ClusterCredential).where(ClusterCredential.uuid == credential_id)
+            credential = session.execute(stmt).scalar_one_or_none()
+
+            return credential
 
     def list_credentials(self):
         with self._session() as session:

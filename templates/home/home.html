@@ -4,12 +4,132 @@
     {{ super() }}
 {% endblock %}
 
+{% block styles %}
+    {{ super() }}
+
+<style>
+  pre {
+    white-space: pre-wrap;
+  }
+
+  #cat_list {
+    padding-top: 1.5rem;
+    padding-bottom: 1.5rem;
+  }
+
+  #label_check_all {
+    margin-bottom: 1.5rem;
+  }
+
+  #category-list {
+    padding: 1.5rem;
+    margin: 1.5rem;
+  }
+
+  .title {
+    font-size: 2.5rem;
+    font-family: "Overpass", sans-serif;
+    top: 10px;
+    position: relative;
+  }
+
+  .alert strong {
+    text-transform: capitalize;
+  }
+
+  .navbar-pf .navbar-brand img {
+    display: inline;
+  }
+
+  .navbar {
+    width: 100%;
+  }
+
+  .navbar-header {
+    float: left;
+    height: 58px;
+  }
+
+  .badge-danger {
+    color: #fff;
+    background-color: #cc0000;
+  }
+
+  .badge-info {
+    color: #fff;
+    background-color: #2b18f9;
+  }
+
+  .badge-skipped {
+    color: #fff;
+    background-color: #808080;
+  }
+
+  .badge-success {
+    color: #fff;
+    background-color: #3f9c35;
+  }
+
+  .badge {
+    display: inline-block;
+    padding: 0.1875rem 0.4375rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+    line-height: 1;
+    text-align: center;
+    white-space: nowrap;
+    vertical-align: baseline;
+    margin-left: 0px;
+  }
+
+  input[type="search"]::-webkit-search-cancel-button {
+    -webkit-appearance: searchfield-cancel-button;
+  }
+
+  .toolbar-pf-results {
+    border-top: 0px solid #d1d1d1;
+    margin-top: 10px;
+  }
+
+  .row-cards-pf {
+    margin-left: 0;
+    margin-right: 0;
+  }
+
+  .toolbar-pf {
+    background: #fff;
+    border-bottom: 0px solid #d1d1d1;
+    box-shadow: 0 1px 0 rgba(3, 3, 3, 0.045);
+    padding-top: 10px;
+  }
+
+  .category-badge {
+    margin-right: 10px;
+  }
+
+  /* click the header unless the mouse cursor changes, so it acts like a button */
+  tr[id$="_header"] { cursor: pointer; }
+</style>
+{% endblock %}
+
+{% block scripts %}
+    {{ super() }}
+<!-- scripts for pie chart -->
+<script src="local-web-resources/cdnjs.cloudflare.com/ajax/libs/c3/0.7.8/c3.min.js"></script>
+<script src="local-web-resources/cdnjs.cloudflare.com/ajax/libs/d3/5.12.0/d3.min.js"></script>
+<script language="JavaScript" src="{{ url_for('static_default_blueprint.static', filename='js/osc-home.js') }}"></script>
+{% endblock %}
+
 {% block head %}
     {{ super() }}
 {% endblock %}
 
+{% block content_special %}
+    {% include 'partials/home/tab_nav.html' %}
+{% endblock %}
+
 {% block content %}
 <div id="result-container" class="occ-result-container">
-    {% include 'osc.local.html' %}
+    {% include 'results.html' %}
 </div>
 {% endblock %}
