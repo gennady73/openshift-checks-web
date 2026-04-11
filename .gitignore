@@ -165,6 +165,8 @@ instance/*
 !instance/.gitignore
 .webassets-cache
 .env
+### Flask session
+flask_session/*
 
 # application log files
 logs/
