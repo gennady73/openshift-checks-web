@@ -1,0 +1,12 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: os-checker-global-binding
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: os-checker-admin-no-delete # Must match the custom ClusterRole
+subjects:
+- kind: ServiceAccount
+  name: os-checker-sa # Must match the value from the "Service Account" column
+  namespace: default  # Must match the value from the "namespace" column

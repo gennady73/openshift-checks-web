@@ -2,40 +2,34 @@
 
 {% block head %}
   {{ super() }}
+    <link rel="stylesheet" type="text/css"
+          href="{{ url_for('static_ext2_blueprint.static',
+          filename='cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/css/bootstrap.min.css') }}">
+    <link rel="stylesheet" type="text/css"
+      href="{{ url_for('static_ext2_blueprint.static',
+      filename='cdnjs.cloudflare.com/ajax/libs/bootstrap-select/1.13.1/css/bootstrap-select.min.css') }}">
+    <link rel="stylesheet" type="text/css"
+          href="{{ url_for('static_ext2_blueprint.static',
+            filename='cdnjs.cloudflare.com/ajax/libs/patternfly/3.59.3/css/patternfly.min.css') }}">
+    <link rel="stylesheet" type="text/css"
+          href="{{ url_for('static_ext2_blueprint.static',
+            filename='cdnjs.cloudflare.com/ajax/libs/patternfly/3.59.3/css/patternfly-additions.min.css') }}">
+
+    <script src="{{ url_for('static_ext2_blueprint.static',
+            filename='cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/js/bootstrap.min.js') }}"></script>
+    <script src="{{ url_for('static_ext2_blueprint.static',
+            filename='cdnjs.cloudflare.com/ajax/libs/bootstrap-select/1.13.1/js/bootstrap-select.min.js') }}"></script>
 
   {% block page_styles %}{% endblock %}
+
   {% block page_scripts %}{% endblock %}
 
 {% endblock %}
 
-
-
-<!--<main>-->
 {% block content_special %}
 <!-- TAB NAV BEGIN -->
-<div style="padding-top: 45px;">
-  <!-- Nav tabs -->
-  <ul class="nav nav-tabs" role="navigation">
-<!--    <li role="navigation" {% if active_tab2=="JobList" %}class="active"{% endif %}>-->
-<!--        <a href="{{ url_for('scheduler.scheduler_jobs') }}" role="tab">Job List</a>-->
-<!--    </li>-->
-<!--    <li role="navigation" {% if active_tab2=="Settings" %}class="active"{% endif %}>-->
-<!--        <a href="{{ url_for('scheduler.scheduler_settings') }}" role="tab">Settings</a>-->
-<!--    </li>-->
-  </ul>
-
-  <!-- Tab panes -->
-  <div class="tab-content">
-    {% block content_special_nested %}
-    <div role="tabpanel" class="tab-pane active" id="home">...</div>
-    <div role="tabpanel" class="tab-pane" id="profile">...</div>
-    <div role="tabpanel" class="tab-pane" id="messages">...</div>
-    <div role="tabpanel" class="tab-pane" id="settings">...</div>
-    {% endblock content_special_nested %}
-  </div>
-    <script>
-   console.log("<<< _NAVTANB_ >>>")
-</script>
+<div id="editor-tab-nav" style="padding-top: 65px;">
+{# Nav tabs may be placed here #}
 </div>
 <!-- TAB NAV END -->
 {% endblock content_special %}
@@ -47,5 +41,3 @@
     </div>
 </main>
 {% endblock content %}
-
-

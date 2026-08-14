@@ -20,67 +20,6 @@
 
 
 {% block content_special_nested %}
-
-    <div role="tabpanel" class="tab-pane active" id="settings">
-
-        <div class="toolbar-pf-actions">
-            {#
-            <nav id="nav2">
-                <form id="async-form" action="/async-task" method="post" style="display:inline;">
-                    <button type="submit" onclick="showLoading();" class="btn btn-primary" disabled>Add new job(old)</button>
-                    <span id="loading-icon" class="loading-icon">
-                            <img src="{{ url_for('static', filename='loading-small.jpg') }}" alt="Loading..">
-                        </span>
-                </form>
-                <!-- trigger modal for creating a new job -->
-                <button type="button" class="btn btn-primary header-actions" id="createJob" name="createJob"
-                        onclick="javascript:occode.openNewFileModal(getResourceElementFromTree());"
-                        data-action-id="create_new_file">
-                    Add new job(modal)
-                </button>
-                <button type="button" class="btn btn-primary"  id="editJob" name="editJob" data-toggle="modal" data-target="#myModal" disabled>
-                    Edit job(modal)
-                </button>
-                <button type="button" class="btn btn-primary" id="deleteJobs" name="deleteJobs" data-toggle="modal" data-target="#myModalDelete" disabled>
-                    Delete job(modal)
-                </button>
-            </nav>
-            #}
-            <div id="notification" class="notification">
-                {% with messages = get_flashed_messages(with_categories=true) %}
-                    {% if messages %}
-                        {% for category, message in messages %}
-                            {% if category == "success" %}
-                                <div class="alert alert-info">{{ message }}</div>
-                                <script>
-                                $(document).ready(function () {
-                                    //debugger;
-                                    console.log("action success: ", $('#myModalForm input#job_action_id').val());
-                                    $('#myModalForm input#job_action_id').val('read');
-                                    console.log("action set to default: ", $('#myModalForm input#job_action_id').val());
-                                });
-                                </script>
-                            {% else %}
-                                <div class="alert alert-{{ category }}">{{ message }}</div>
-                                <script>
-                                $(document).ready(function () {
-                                    //debugger;
-                                    console.log("action error : ", $('#myModalForm input#job_action_id').val());
-                                    $('#myModalForm input#job_action_id').val('read');
-                                    console.log("action set to default: ", $('#myModalForm input#job_action_id').val());
-                                });
-                                </script>
-                            {% endif %}
-                        {% endfor %}
-                        <script>
-                            $('#notification').fadeOut(5000);
-                        </script>
-                    {% endif %}
-                {% endwith %}
-            </div>
-        </div>
-    </div>
-
     <script src="{{ url_for('static_ext2_blueprint.static',
             filename='cdnjs.cloudflare.com/ajax/libs/jquery/3.6.4/jquery.min.js') }}"></script>
     <!-- Assets for a modal for creating a new job -->
@@ -115,18 +54,18 @@
           margin-left:10px;
           margin-right:5px;
         }*/
-        .input-medium {
+        #new-project-trigger .input-medium {
           min-width: 205px;
           max-width: 275px;
-          /*margin-left:10px;*/
-          /*margin-right:5px;*/
+/*          margin-left:10px;*/
+/*          margin-right:5px;*/
         }
-        .input-small-fixed {
-          min-width: 55px;
-          max-width: 55px;
-          margin-left:10px;
-          margin-right:5px;
-        }
+/*        .input-small-fixed {*/
+/*          min-width: 55px;*/
+/*          max-width: 55px;*/
+/*          margin-left:10px;*/
+/*          margin-right:5px;*/
+/*        }*/
         .wizard-pf-row {
             height: auto;
         }
@@ -210,14 +149,14 @@
         <div id="page-row" class="row" style="margin:5px;">
             <div id="flaskcode-list" class="col-md-2 col-sm-3 col-xs-3">
                 <!-- <h4 style="white-space:nowrap;"><i class="fa fa-folder" aria-hidden="true"></i> {{ dirname|truncate(20) }}</h4> -->
-                <span id="project-location" class="fa">
+<!--                <span id="project-location" class="fa">-->
                     <select class="form-control input-medium fa" id="new-project-trigger" name="new-project-trigger"
                         aria-describedby="project-location"
                         data-error="The value is empty!" data-minlength="3" required >
                         <option value="checks-extended" {% if dirname|truncate(20)=="checks-extended" %} selected {% endif %} >checks-extended</option>
                         <option value="checksroot" {% if dirname|truncate(20)=="checksroot" %} selected {% endif %} >checks</option>
                     </select>
-                </span>
+<!--                </span>-->
                 <div class="list-header well well-sm mb-0"><i class="fa fa-folder" aria-hidden="true"></i> {{ dirname|truncate(20) }}</div>
                 <div class="list-container">
                     {{ render_dir_tree(dtree, 'dir-tree') }}

@@ -125,22 +125,6 @@ height: 58px;
 
 /* navbar-nav */
 .occ-navbar-nav a {
-/*font-family: helvetica, arial, sans-serif;
-font-feature-settings: normal;
-font-kerning: auto;
-font-optical-sizing: auto;*/
-
-/*font-size-adjust: none;
-font-stretch: 100%;
-font-style: normal;
-font-variant-alternates: normal;
-font-variant-caps: normal;
-font-variant-east-asian: normal;
-font-variant-emoji: normal;
-font-variant-ligatures: normal;
-font-variant-numeric: normal;
-font-variant-position: normal;
-font-variation-settings: normal;*/
 font-family: Overpass, sans-serif;
 font-size: larger;
 font-weight: 100;
@@ -155,7 +139,6 @@ color: rgb(255, 255, 255);
 .occ-nav li:focus, li:hover {
     color: #0088ce;
     text-decoration: none;
-    border-bottom-style: solid;
 }
 
 .badge-danger {
@@ -194,23 +177,92 @@ input[type="search"]::-webkit-search-cancel-button {
 -webkit-appearance: searchfield-cancel-button;
 }
 
-/*.toolbar-pf-results {*/
-/*border-top: 0px solid #d1d1d1;*/
-/*margin-top: 10px;*/
-/*}*/
+/* Refactored Toolbar framework styles (background colors moved to SCSS) */
+.toolbar-pf-results {
+border-top: 0px solid #d1d1d1;
+margin-top: 10px;
+}
 
-/*.row-cards-pf {*/
-/*margin-left: 0;*/
-/*margin-right: 0;*/
-/*}*/
+.row-cards-pf {
+margin-left: 0;
+margin-right: 0;
+}
 
-/*.toolbar-pf {*/
-/*background: #fff;*/
-/*border-bottom: 0px solid #d1d1d1;*/
-/*box-shadow: 0 1px 0 rgba(3, 3, 3, 0.045);*/
-/*padding-top: 10px;*/
-/*}*/
+.toolbar-pf {
+border-bottom: 0px solid #d1d1d1;
+box-shadow: 0 1px 0 rgba(3, 3, 3, 0.045);
+padding-top: 10px;
+}
 
 .category-badge {
 margin-right: 10px;
+}
+
+.pf-m__link {
+  transition: all 0.2s ease-in-out;
+}
+
+.tab-nav-item {
+    width: 180px;
+    transition: all 0.1s ease-in-out;
+}
+
+
+/* ==========================================================================
+   REFACTORED STRUCTURAL STYLES (From home, diff, list)
+   Note: All hardcoded colors have been moved to SCSS files!
+   ========================================================================== */
+
+/* Shared Layout (home & diff) */
+tr[id$="_header"] { cursor: pointer; }
+
+/* Diff Page Specific */
+.list-group-item.row-unchanged { opacity: 0.6; }
+#monacoDiffModal.modal-dialog { margin-top: 60px; }
+.diff-badge {
+    font-size: 11px;
+    padding: 2px 6px;
+    border-radius: 10px;
+    margin-left: 10px;
+    font-weight: bold;
+    display: inline-block;
+}
+
+/* List/Scheduler Page Specific */
+.input-group-addon.label-span { text-align: left; padding: 6px 12px; min-width: 130px; max-width: 200px; }
+.input-small-fixed-2 .input-small { min-width: 25px; max-width: 75px; margin-left: 10px; margin-right: 5px; width: auto; }
+.input-small-fixed { min-width: 55px; max-width: 55px; margin-left: 10px; margin-right: 5px; }
+.wizard-pf-row { height: 30px; }
+
+/* ==========================================================================
+   SCHEDULER MODAL ALIGNMENT FIXES
+   ========================================================================== */
+
+/* Force form groups for interval/cron to display inline cleanly */
+#trigger-interval-minute,
+#trigger-interval-second,
+#time-picker-group {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 15px; /* Creates even spacing between elements */
+    margin-bottom: 15px;
+}
+
+/* Reset label margins so they align perfectly center with the inputs */
+#trigger-interval-minute label,
+#trigger-interval-second label,
+#time-picker-group label {
+    margin-bottom: 0;
+    display: flex;
+    align-items: center;
+    gap: 5px; /* Space between radio button and its text */
+}
+
+/* Ensure the timepicker dropdown doesn't artificially expand the modal width */
+.bootstrap-timepicker-widget.dropdown-menu {
+    width: auto;
+    min-width: 150px;
+    z-index: 10050 !important;
 }

@@ -1,5 +1,6 @@
 import json
 from pathlib import Path
+from typing import Optional
 from urllib.parse import unquote
 
 import jinja2
@@ -9,6 +10,8 @@ import os
 import asyncio
 import concurrent.futures
 from asyncio import AbstractEventLoop
+
+from sqlalchemy import true
 
 from flask_session import Session
 
@@ -29,6 +32,9 @@ from collections import OrderedDict
 from modules.security import cluster_credentials
 import re
 
+import sass
+from flask_assets import Environment, Bundle
+
 app = Flask(__name__)
 
 app.config.from_object(Config)
@@ -45,8 +51,10 @@ static_default_blueprint = \
     Blueprint('static_default_blueprint', __name__, static_folder='static')
 static_ext1_blueprint = \
     Blueprint('static_ext1_blueprint', __name__, static_folder='../openshift-checks')
+# static_ext2_blueprint = \
+#     Blueprint('static_ext2_blueprint', __name__, static_folder='../openshift-checks/local-web-resources')
 static_ext2_blueprint = \
-    Blueprint('static_ext2_blueprint', __name__, static_folder='../openshift-checks/local-web-resources')
+    Blueprint('static_ext2_blueprint', __name__, static_folder='local-web-resources')
 static_data_blueprint = \
     Blueprint('static_data_blueprint', __name__, static_folder='data')
 static_local_wr_blueprint = \
@@ -80,6 +88,48 @@ my_loader = jinja2.ChoiceLoader([
 
 app.jinja_loader = my_loader
 
+from flask_assets import Environment, Bundle
+
+#os.putenv("SASS_PATH", "xxx")
+
+assets = Environment(app)
+
+# THEME STYLING
+# 1. Define exact paths to the SASS roots
+# Note: Ensure you changed 3.4.3 to 3.4.1 in your actual folder structure!
+pf_sass_path = os.path.join(app.root_path, 'local-web-resources', 'cdnjs.cloudflare.com/ajax/libs/patternfly/3.59.3/sass')
+pf2_sass_path = os.path.join(app.root_path, 'local-web-resources', 'cdnjs.cloudflare.com/ajax/libs/patternfly/3.59.3/sass/patternfly')
+bs_sass_path = os.path.join(app.root_path, 'local-web-resources', 'cdnjs.cloudflare.com/ajax/libs/patternfly/3.59.3/sass/patternfly/dependencies/bootstrap-sass/3.4.1/assets/stylesheets')
+
+st_sass_path = os.path.join(app.root_path, 'static')
+fa_sass_path = os.path.join(app.root_path, 'local-web-resources', 'font-awesome', '4.7.0', 'scss')
+
+# 2. Append to Flask-Assets
+assets.append_path(pf_sass_path)
+assets.append_path(pf2_sass_path)
+assets.append_path(bs_sass_path)
+assets.append_path(st_sass_path)
+assets.append_path(fa_sass_path)
+
+# 3. Explicitly tell the libsass compiler where to resolve @imports
+app.config['include_paths'] = [pf_sass_path, pf_sass_path, bs_sass_path, st_sass_path, fa_sass_path]
+
+
+# 4. Define and build the bundle
+scss_bundle = Bundle(
+    'scss/theme-light.scss',
+    filters='libsass',
+    output='css/theme-light.css',
+    depends=('**/*.scss', '**/*.css'),
+    debug=True,
+)
+
+assets.config['LIBSASS_INCLUDES'] = app.config['include_paths']
+
+assets.register('theme_style', scss_bundle)
+scss_bundle.build()
+# THEME STYLING END
+
 scheduler = None
 logs = None
 
@@ -87,7 +137,13 @@ logs = None
 CHECK_RESULT_DIR_NAME = 'results' # in future releases, this value must be retrieved from the app config.
 
 # The default name pattern of "result" file: <YYYYMMDD>-<HHMMSS>-<CLUSTER_ID>-<CLUSTER_NAME>.json
-RESULT_DIR_REGEX_PATTERN = r"([\d]{8}-[\d]{6})(-)[0-9]+(-)([\w\d\-]+)(.json)"
+#RESULT_DIR_REGEX_PATTERN = r"([\d]{8}-[\d]{6})(-)[0-9]+(-)([\w\d\-]+)(.json)"
+# The default name pattern of "result" file: <YYYYMMDD>-<HHMMSS>-<CLUSTER_UUID>-<CLUSTER_NAME>.json
+# Regex for UUID4 (standard in OpenShift)
+# uuid_pattern = r'[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}'
+RESULT_DIR_REGEX_PATTERN = (r"([\d]{8}-[\d]{6})(-)"
+                            r"([0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})"
+                            r"((-)([\w\d\-]+))?(.json)")
 
 STATIC_DATA_BLUEPRINT:Blueprint|None = None
 CHECK_RESULT_PATH: str|None = None
@@ -131,14 +187,16 @@ def init_home(fapp:Flask):
 #     matched_file_names.sort(reverse=True)
 #     return matched_file_names
 
-def json_files_list(directory: str, pattern: str | None = None, start_date=None, end_date=None) -> list:
+def json_files_list(directory: str, pattern: str | None = None, start_date=None, end_date=None, cluster_id=None) -> list:
     if pattern is None or pattern.strip() == '':
         pattern = RESULT_DIR_REGEX_PATTERN
     regex = re.compile(pattern)
 
     matched_artifacts = []
 
-    for f in os.listdir(directory):
+    directory_path = os.path.join(directory,cluster_id) if cluster_id is not None and cluster_id != '0' else directory
+
+    for f in os.listdir(directory_path):
         if not f.endswith('.json'):
             continue
 
@@ -154,7 +212,7 @@ def json_files_list(directory: str, pattern: str | None = None, start_date=None,
             if end_date and file_dt > end_date:
                 continue
 
-            file_path = os.path.join(directory, f)
+            file_path = os.path.join(directory_path, f)
             is_baseline = False
 
             # Open the JSON file to check for the baseline flag
@@ -270,15 +328,19 @@ async def toggle_baseline():
     # --- Set "is_baseline": true(or false) in the "metadata section" if JSON file ---
     try:
         # Read the JSON file from the path where results are stored.
-        result_file_name_path = os.path.join(CHECK_RESULT_PATH, result_file_name)
+        result_file_name_path = os.path.join(CHECK_RESULT_PATH, cluster_id, result_file_name)
 
         with open(result_file_name_path, 'r') as f:
             output = json.load(f)
 
+        # Toggle and Write metadata the "baseline" tag, default false
         if "is_baseline" in output["metadata"]:
             output["metadata"]["is_baseline"] = not output["metadata"]["is_baseline"]
         else:
             output["metadata"]["is_baseline"] = True
+
+        with open(result_file_name_path, 'w') as f_out:
+            json.dump(output, f_out, indent=4)
 
     except FileNotFoundError as error:
         flash(f'The baseline toggle is failed. {error}', 'error')
@@ -294,10 +356,39 @@ def check_result_file_name():
     result_file_name = session.get('selected_result', 'osc.json')
     return jsonify(result_file_name)
 
+# OLD VERSION
+# @app.route('/data/list', methods=['GET'])
+# def check_result_data_list():
+#     json_list = json_files_list(directory=CHECK_RESULT_PATH, pattern=RESULT_DIR_REGEX_PATTERN)
+#     return jsonify(json_list)
+
 @app.route('/data/list', methods=['GET'])
 def check_result_data_list():
-    json_list = json_files_list(directory=CHECK_RESULT_PATH, pattern=RESULT_DIR_REGEX_PATTERN)
-    return jsonify(json_list)
+    # Capture the active cluster ID sent by the JS AJAX call
+    cluster_id = request.args.get('cluster_id')
+
+    start_str = request.args.get('start_date')
+    end_str = request.args.get('end_date')
+
+    # ... existing datetime parsing logic...
+    start_date = None
+    end_date = None
+    if start_str and end_str:
+        start_date = datetime.strptime(start_str, "%Y%m%d-%H%M%S")
+        end_date = datetime.strptime(end_str, "%Y%m%d-%H%M%S")
+
+    # Pass the cluster_id to your existing json_files_list function
+    # Update that function's regex or logic to only return files matching this specific cluster
+    filtered_files = json_files_list(
+        directory=CHECK_RESULT_PATH,
+        pattern=RESULT_DIR_REGEX_PATTERN,
+        start_date=start_date,
+        end_date=end_date,
+        cluster_id=cluster_id
+    )
+
+    return jsonify(filtered_files)
+
 
 
 @app.route('/<filename>.json', methods=['GET'])
@@ -318,7 +409,7 @@ def get_json_data(filename):
     #     directory = DIFF_RESULT_PATH
     # el
     if (not json_file_name.endswith('_diff.json') and RESULT_DIR_REGEX.match(json_file_name)) or json_file_name == 'osc.json':
-        directory = CHECK_RESULT_PATH
+        directory = os.path.join(CHECK_RESULT_PATH, RESULT_DIR_REGEX.match(json_file_name).group(3)) # results/UUID
     else:
         return 404
 
@@ -342,7 +433,7 @@ def home():
     clusters = get_clusters_from_datastore() # get_clusters_from_kubeconfigs()
     selected_cluster = session.get('selected_cluster', '0')
 
-    list_json = json_files_list(directory=CHECK_RESULT_PATH, pattern=RESULT_DIR_REGEX_PATTERN)
+    list_json = json_files_list(directory=CHECK_RESULT_PATH, pattern=RESULT_DIR_REGEX_PATTERN, cluster_id=selected_cluster)
     query_string = request.query_string.decode()
 
     if query_string != '':
@@ -584,8 +675,14 @@ def login_cluster():
         }), 400
 
     session['selected_cluster'] = selected_cluster
+    session['selected_result'] = None # clear current
     response = oc_login2(selected_cluster, app.cluster_creds)
-    return jsonify(response)
+    status = {'status' : 'error' if response.get('error') else 'success'}
+
+    return jsonify( status | response | {
+                    "cluster_id": selected_cluster,
+                    "selected_result": None,
+                    })
 
 
 @app.route('/favicon.ico')
@@ -594,9 +691,9 @@ def favicon():
                                'favicon.ico', mimetype='image/vnd.microsoft.icon')
 
 
-@app.route('/osc.json')
-def osc_json():
-    return send_from_directory(static_ext1_blueprint.static_folder, 'osc.json')
+# @app.route('/osc.json')
+# def osc_json():
+#     return send_from_directory(static_ext1_blueprint.static_folder, 'osc.json')
 
 
 def list_json_files(directory):
@@ -617,12 +714,44 @@ def list_json_files(directory):
 
     return matched_file_names
 
+
 @app.route('/<filename>.json')
 def get_json(filename):
-    if "/" in filename or "\\" in filename or filename == "..":
-        return (404)
-    session['selected_result'] = filename
-    return send_from_directory(static_ext1_blueprint.static_folder, f"{filename}.json")
+    # if "/" in filename or "\\" in filename or filename == "..":
+    #     return (404)
+    # session['selected_result'] = filename
+    # return send_from_directory(static_ext1_blueprint.static_folder, f"{filename}.json")
+
+    cluster_id = session.get('selected_cluster', '0')
+
+    if filename is not None:
+        json_file_name = f"{filename}.json"
+    else:
+        json_file_name = 'osc.json'
+
+    if  RESULT_DIR_REGEX.match(json_file_name):
+        directory_path = os.path.join(CHECK_RESULT_PATH,
+                                      cluster_id) if cluster_id is not None and cluster_id != '0' else CHECK_RESULT_PATH
+
+    elif json_file_name == 'osc.json':
+        directory_path = CHECK_RESULT_PATH
+    else:
+        return 404
+
+    json_file_path = os.path.join(directory_path, f"{json_file_name}")
+
+    try:
+        # Open the file and load the data into a Python dictionary/list
+        with open(json_file_path, 'r') as f:
+            data = json.load(f)
+
+        session['selected_result'] = json_file_name
+        # Return the Python object as a JSON response
+        return jsonify(data)
+    except FileNotFoundError:
+        return jsonify({"error": "Data file not found"}), 404
+    except json.JSONDecodeError:
+        return jsonify({"error": "Error decoding JSON"}), 500
 
 
 @app.route('/async-task', methods=['POST'])
@@ -630,12 +759,34 @@ async def async_task_route():
     output = {}
     result_file_name = None
     list_json = []
+    cluster_id = None
 
     try:
         timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         cluster_id = request.json.get('cluster_id')
-        list_json = json_files_list(directory=CHECK_RESULT_PATH, pattern=RESULT_DIR_REGEX_PATTERN)
+        list_json = json_files_list(directory=CHECK_RESULT_PATH, pattern=RESULT_DIR_REGEX_PATTERN, cluster_id=cluster_id)
         result_file_name = session.get('selected_result', 'osc.json')
+
+        # ### DEBUG ONLY - REMOVE ###
+        # result_file_name_list = ['20260413-192103-4e1f2e3e-38d1-48d6-9157-066e517497bf.json',
+        #                           '20260413-194051-4e1f2e3e-38d1-48d6-9157-066e517497bf.json',
+        #                          '20260413-200700-4e1f2e3e-38d1-48d6-9157-066e517497bf.json']
+        # import random
+        # result_file_name = random.choice(result_file_name_list)
+        # result_file_name_out_path = os.path.join(CHECK_RESULT_PATH, cluster_id, result_file_name)
+        # with open(result_file_name_out_path, 'r') as f:
+        #     output = json.load(f)
+        #
+        # if result_file_name:
+        #     return jsonify({
+        #         "home_tab_nav": render_template('partials/home/tab_nav.html'),
+        #         "result_container": render_template('results.html'),
+        #         "notification": get_flashed_messages(True),
+        #         "json_check_list": list_json,
+        #         "json_check_file": result_file_name,
+        #         "data": output,
+        #     })
+        # ### DEBUG ONLY - END ###
 
         if cluster_id is None or str(cluster_id).strip() == '':
             flash(f'Task execution failed at {timestamp}. Select cluster on order to run checks', 'error')
@@ -646,6 +797,7 @@ async def async_task_route():
                 "notification": get_flashed_messages(True),
                 "json_check_list": list_json,
                 "json_check_file": result_file_name,
+                "cluster_id": cluster_id,
             })
 
         # FIX: "how it may be used here?"
@@ -669,29 +821,31 @@ async def async_task_route():
                 "notification": get_flashed_messages(True),
                 "json_check_list": list_json,
                 "json_check_file": result_file_name,
+                "cluster_id": cluster_id,
             })
 
         else:
             flash(f'Task execution is scheduled at {timestamp}.', 'success')
 
             result = await asyncio.wait_for(asyncio.gather(
-                perform_async_task_2(cluster_name=cluster_id,
-                                    login_attributes=login_attributes,
-                                    timestamp=timestamp,
+                perform_async_task_2(cluster_id=cluster_id, login_attributes=login_attributes, timestamp=timestamp,
                                      dest_dir=CHECK_RESULT_PATH)),
                 timeout=600)
             result_output, result_file_name = result[0]
 
             try:
                 # Read the JSON file from the path where results are stored.
-                result_file_name_out_path = os.path.join(CHECK_RESULT_PATH, result_file_name)
+                result_file_name_out_path = os.path.join(CHECK_RESULT_PATH, cluster_id, result_file_name)
                 with open(result_file_name_out_path, 'r') as f:
                     output = json.load(f)
 
                 # Write metadata the "baseline" tag, default false
                 output["metadata"]["is_baseline"] = False
-                with open('data.json', 'w') as f_out:
+                with open(result_file_name_out_path, 'w') as f_out:
                     json.dump(output, f_out, indent=4)
+
+                # rebuild list with new result
+                list_json = json_files_list(directory=CHECK_RESULT_PATH, pattern=RESULT_DIR_REGEX_PATTERN, cluster_id=cluster_id)
 
             except FileNotFoundError as error:
                 flash(f'Task execution failed at {timestamp}. {error}', 'error')
@@ -710,6 +864,7 @@ async def async_task_route():
         "json_check_list": list_json,
         "json_check_file": result_file_name,
         "data": output,
+        "cluster_id": cluster_id,
     })
 
 

@@ -1,0 +1,91 @@
+<!-- HELP popup -->
+<div class="modal fade" id="credentialsHelpModal" tabindex="-1" role="dialog" aria-labelledby="credentialsHelpModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal" aria-hidden="true">
+          <span class="pficon pficon-close"></span>
+        </button>
+        <h4 class="modal-title" id="credentialsHelpModalLabel">OpenShift Authentication Guide</h4>
+      </div>
+      <div class="modal-body">
+        <p>To connect this application to your OpenShift cluster, you must provide a valid Bearer Token. The lifespan of your connection depends on the type of token you generate:</p>
+
+        <ul>
+          <li><strong>Standard API Token (24 Hours):</strong> Generated via <code>oc whoami --show-token</code>. Ideal for quick, just-in-time debugging.</li>
+          <li><strong>Service Account Token (1 Year):</strong> Requires a dedicated Service Account and Secret. Ideal for persistent monitoring.</li>
+          <li><s><strong>Client Certificate (30 Days):</strong></s> <em>Deprecated in this app due to strict 30-day internal OpenShift limitations.</em></li>
+        </ul>
+
+        <hr>
+
+        <h4>Generate a 1-Year Service Account Token</h4>
+        <p>Copy and execute the following script in your terminal while authenticated as a cluster administrator. It will create a Service Account with read-only and debug permissions, and output a token valid for 1 year.</p>
+
+        <pre style="background-color: #f5f5f5; padding: 15px; border: 1px solid #ccc;"><code>#!/usr/bin/env bash
+set -e
+
+NAMESPACE="default"
+SA_NAME="os-checker-sa"
+ROLE_NAME="os-checker-admin-no-delete"
+SECRET_NAME="${SA_NAME}-long-lived-token"
+
+echo "1. Creating Service Account..."
+oc create serviceaccount "${SA_NAME}" -n "${NAMESPACE}"
+
+echo "2. Applying Custom ClusterRole (Admin without Delete + Debug)..."
+cat &lt;&lt;EOF | oc apply -f -
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: ${ROLE_NAME}
+rules:
+- apiGroups: ["*"]
+  resources: ["*"]
+  verbs: ["get", "list", "watch", "create", "update", "patch"]
+- apiGroups: ["security.openshift.io"]
+  resources: ["securitycontextconstraints"]
+  resourceNames: ["privileged"]
+  verbs: ["use"]
+EOF
+
+echo "3. Binding ClusterRole to Service Account..."
+cat &lt;&lt;EOF | oc apply -f -
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: ${ROLE_NAME}-binding-${NAMESPACE}-${SA_NAME}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: ${ROLE_NAME}
+subjects:
+- kind: ServiceAccount
+  name: ${SA_NAME}
+  namespace: ${NAMESPACE}
+EOF
+
+echo "4. Requesting 1-Year Token Secret..."
+cat &lt;&lt;EOF | oc apply -f -
+apiVersion: v1
+kind: Secret
+type: kubernetes.io/service-account-token
+metadata:
+  name: ${SECRET_NAME}
+  namespace: ${NAMESPACE}
+  annotations:
+    kubernetes.io/service-account.name: "${SA_NAME}"
+EOF
+
+sleep 2
+echo -e "\n=== YOUR 1-YEAR TOKEN ==="
+oc get secret "${SECRET_NAME}" -n "${NAMESPACE}" -o jsonpath='{.data.token}' | base64 -d
+echo -e "\n========================="</code></pre>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+<!-- /HELP popup -->

@@ -1,19 +1,42 @@
 {% extends "layout.html" %}
 
-{% block head %}
-  {{ super() }}
+{% block title %}
+    {{ super() }}
 {% endblock %}
 
+{% block styles %}
+    {{ super() }}
+    <link rel="stylesheet" type="text/css"
+      href="{{ url_for('static_ext2_blueprint.static',
+      filename='cdnjs.cloudflare.com/ajax/libs/bootstrap-select/1.13.1/css/bootstrap-select.min.css') }}">
+{% endblock %}
+
+{% block scripts %}
+    {{ super() }}
+<!-- scripts for pie chart -->
+<script src="{{ url_for('static_ext2_blueprint.static',
+        filename='cdnjs.cloudflare.com/ajax/libs/c3/0.7.8/c3.min.js') }}"></script>
+<script src="{{ url_for('static_ext2_blueprint.static',
+        filename='cdnjs.cloudflare.com/ajax/libs/d3/5.12.0/d3.min.js') }}"></script>
+
+<script src="{{ url_for('static_default_blueprint.static',
+        filename='js/osc-common.js') }}"></script>
+
+{% endblock %}
+
+{% block head %}
+    {{ super() }}
+{% endblock %}
 
 {% block content_special %}
 <!-- TAB NAV BEGIN -->
 <div style="padding-top: 65px;">
   <!-- Nav tabs -->
   <ul class="nav nav-tabs" role="navigation">
-    <li role="navigation" {% if active_tab2=="JobList" %}class="active"{% endif %}>
+    <li role="navigation" {% if active_tab2=="JobList" %} class="active tab-nav-item" {% else %} class="tab-nav-item" {% endif %}>
         <a href="{{ url_for('scheduler.scheduler_jobs') }}" role="tab">Job List</a>
     </li>
-    <li role="navigation" {% if active_tab2=="Settings" %}class="active"{% endif %}>
+    <li role="navigation" {% if active_tab2=="Settings" %} class="active tab-nav-item" {% else %} class="tab-nav-item" {% endif %}>
         <a href="{{ url_for('scheduler.scheduler_settings') }}" role="tab">Settings</a>
     </li>
   </ul>
@@ -38,4 +61,4 @@
         <div class="panel-default"></div>
     </div>
 </main>
-{% endblock content %}
+{% endblock %}

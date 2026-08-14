@@ -1,158 +1,209 @@
 // ****************************
 //  scripts for the home pages
 // ****************************
+var $clusterSelect = null;
+var $resultsSelect = null;
 
 // 4. Visual Decoration Logic
 function renderDiffTable(data) {
 }
 
+// 4. Core AJAX Rendering Logic
+function fetchAndRenderResults(clusterId, preselectResult) {
+
+    clearAllTables();
+
+    $.ajax({
+        url: AppConfig.urls.listData,
+        type: 'GET',
+        data: { cluster_id: clusterId },
+        dataType: 'json',
+        success: function(response) {
+
+            $resultsSelect.empty(); // Clear old options
+
+            if (!response || response.length === 0) {
+                $resultsSelect.empty().selectpicker('refresh');
+                return true;
+            }
+
+            // Build the dropdown options dynamically
+            $.each(response, function(index, artifact) {
+                let dateStr = artifact.filename.replace('.json', '').replace(`-${clusterId}`, '');
+                let displayName = moment(dateStr, "YYYYMMDD-HHmmss").format('YYYY-MM-DD HH:mm:ss');
+                let $option = $('<option></option>').val(artifact.filename);
+
+                if (artifact.is_baseline) {
+                    let customHtml = displayName + ' <span style="color: #f0ab00;"><b>&#9733; baseline</b></span>';
+                    $option.attr('data-content', customHtml);
+                    $option.text(displayName + ' (baseline)');
+                } else {
+                    $option.attr('data-content', displayName);
+                    $option.text(displayName);
+                }
+
+                $resultsSelect.append($option);
+            });
+
+            // Re-enable combo and apply the session-saved value if it exists
+            $resultsSelect.prop('disabled', false);
+            if (preselectResult) {
+                // the only working combination.- following two rows together.
+                $resultsSelect.val(preselectResult).selectpicker('refresh');
+                $resultsSelect.selectpicker('val', preselectResult);
+            }
+
+            console.log("Pre-select Result: ", preselectResult);
+
+            // Force bootstrap-select to rebuild the UI
+            $resultsSelect.selectpicker('refresh');
+        },
+        error: function(xhr, status, error) {
+            console.error("Failed to load results for cluster: ", error);
+            $resultsSelect.empty().selectpicker('refresh');
+        }
+    });
+}
+
+function setEmptyState() {
+    // Ensures the dropdown says "Select check result" and cannot be opened
+    $resultsSelect.empty().prop('disabled', true).selectpicker('refresh');
+
+    // hide/empty Metadata and Report tables here:
+    clearAllTables();
+}
+
+function loadReportTables(selectedValue) {
+    console.log('Selected Value:', selectedValue);
+    var reqUrl = `${[location.protocol, "//", location.host, location.pathname].join("")}${selectedValue}`;
+    // Here we load the data from risu.json with ajax and we populate the webpage
+    $.ajax({
+      url: reqUrl,
+      dataType: "json",
+      beforeSend: function () {
+        if (!selectedValue || selectedValue == '') return false; //cancel request
+        $("#report_table_risu_body").append(
+          '<tr id="loading"><td>Loading ' +
+            selectedValue +
+            '... <span class="fa fa-refresh"/></td></tr>'
+        );
+      },
+      success: function(data) {
+        buildPage(data); renderDiffTable(data);
+      }, // ajax success
+      error: function (jqXHR, exception) {
+        console.log(jqXHR);
+        if (jqXHR.status === 0) {
+          warnMessage("danger", "Unable to get JSON file. [0]");
+        } else if (jqXHR.status == 404) {
+          warnMessage("danger", `Requested JSON file '${selectedValue}' was not found.`);
+        } else if (jqXHR.status == 500) {
+          warnMessage("danger", "Internal Server Error [500].");
+        } else if (exception === "parsererror") {
+          warnMessage("danger", "Requested JSON parse failed.");
+        } else if (exception === "timeout") {
+          warnMessage("danger", "Time out error.");
+        } else if (exception === "abort") {
+          warnMessage("danger", "Ajax request aborted.");
+        } else {
+          warnMessage("danger", "Uncaught Error.\n" + jqXHR.responseText);
+        }
+      },
+      complete: function () {
+        var $loadingRow = $("#report_table_risu_body tr#loading");
+        $loadingRow.remove(); // Clean up UI regardless of success/error
+      }, // ajax complete
+    }); // ajax query
+}
+
+/**
+ * Toggle mark of "check result" file as "baseline" for comparison.
+ * @param {string} checkResultFile - afile name of "check result"
+ */
+async function toggleBaseline(checkResultFile) {
+
+  var $div_otherJsons = $("#otherJsons");
+  const clusterId = $('#cluster-select option:selected').val();
+  const selectedCheckResultFile = $("#otherJsons").val(); //$('#jsons').text();
+
+  let rc = await $.ajax({
+    url: '/baseline',
+    type: "POST",
+    dataType: "json",
+    async: false,
+    data: JSON.stringify({
+      cluster_id: clusterId,
+      selected_result: checkResultFile,
+    }),
+    beforeSend: function () {
+        if (clusterId === undefined  || clusterId == '') {
+            $('#loading-icon').hide();
+            $('#submit-btn').prop('disabled', false);
+            $('#notification').text('');
+
+            warnMessage('warning','No cluster selected');
+
+            for (var i = 0; i < 3; i++) { // flash 3 times - refactor it
+                $('#project-location div > button > div.filter-option').fadeOut(250).fadeIn(750);
+            }
+
+            return false;
+        }
+
+      if(!selectedCheckResultFile && !checkResultFile) {
+        warnMessage('danger','No file selected.');
+        return false;
+      }
+      else if(selectedCheckResultFile && !checkResultFile) {
+        checkResultFile = selectedCheckResultFile;
+      }
+
+      $('#loading-icon').show();
+      $('#submit-btn').prop('disabled', true);
+
+      console.log("Toggle Baseline");
+    },
+    success: function (data) {
+       if (data.is_baseline == true) {
+            console.log("Baseline set on : ", checkResultFile);
+       }
+       else if (data.is_baseline == false) {
+            console.log("Baseline removed from : ", checkResultFile);
+       }
+
+    },
+    error: function (xhr, status, err) {
+        console.error("AJAX error:", err);
+        warnMessage('danger','No file selected.', err);
+    },
+  });
+
+    console.log("toggle-baseline-btn : ", rc);
+}
 
 $(document).ready(function() {
-    var sourceUrl = `${jsonFile}`;
-debugger; // osc-home
-    $.getJSON(sourceUrl, function(data) {
-        window.reportData = data;
-        renderDiffTable(data);
-    });
-
     // Initialize Bootstrap tooltips
     $('[data-toggle="tooltip"]').tooltip();
 
-    $('#submit-btn').off('click').on('click', function () {
-        const clusterId = $('#cluster-select option:selected').val();
-        const clusterName = $('#cluster-select option:selected').text().trim();
-        const checkResultsFrom = $('#check-results-from-select').val();
-        const checkResultsTo = $('#check-results-to-select').val();
-        const selectedResult = $('#jsons').text();
+    // 1. Read Configuration & Session State securely from the DOM
+    AppConfig.urls.listData = $('#app-context').data('api-list');
+    AppConfig.state.cluster = $('#app-context').data('active-cluster');
+    AppConfig.state.result = $('#app-context').data('active-result');
 
-        $.ajax({
-            url: '/async-task',
-            method: 'POST',
-            contentType: 'application/json',
-            data: JSON.stringify({
-                cluster_id: clusterId,
-                cluster_name: clusterName,
-                check_results_from: checkResultsFrom,
-                check_results_to: checkResultsTo,
-                selected_result: selectedResult,
-            }),
-            beforeSend: function () {
-                if (clusterId === undefined  || clusterId == ''){
-                    $('#loading-icon').hide();
-                    $('#submit-btn').prop('disabled', false);
-                    $('#notification').text('');
-                    warnMessage('warning','No cluster selected');
-                    for (var i = 0; i < 3; i++) { // flash 3 times - refactor it
-                        $('#cluster-select').fadeOut(250).fadeIn(1450);
-                    }
-                    return false;
-                }
-                $('#loading-icon').show();
-                $('#submit-btn').prop('disabled', true);
-            },
-            success: function (resp) {
-                console.info("Cluster get check results success: ", clusterName);
-                jsonFilesList = resp.json_check_list;
-                jsonFile = resp.json_check_file;
+    $clusterSelect = $('#cluster-select');
+    $resultsSelect = $('#otherJsons');
 
-                //$('#home-tab-nav').html(resp.home_tab_nav);
-                $('#result-container').html(resp.result_container);
-                $('#notification').html(resp.notification);
+    // 2. Initial Application Load: Sync UI with Backend Session
+    if (AppConfig.state.cluster) {
+        // Forces the cluster combo to show the active session cluster
+        $clusterSelect.val(AppConfig.state.cluster).selectpicker('refresh');
+        fetchAndRenderResults(AppConfig.state.cluster, AppConfig.state.result);
+    } else {
+        // Enforce the completely empty default state
+        setEmptyState();
+    }
 
-                checkForFile(jsonFile);
-                /* check-result */
-                if (resp.data) {
-                    window.reportData = resp.data;
-                    setTimeout(function() {
-                        buildPage(window.reportData);
-                        renderDiffTable(window.reportData);
-                    }, 125);
-                }
-            },
-            error: function (xhr, status, err) {
-                console.error("AJAX error:", err);
-                alert("AJAX error: " + err);
-            },
-            complete: function () {
-                $('#loading-icon').hide();
-                $('#submit-btn').prop('disabled', false);
-            }
-        });
-    });
-
-//    // 4. Visual Decoration Logic
-//    function renderDiffTable(data) {
-//        var dataResults = data.results || {};
-//
-//        $.each(dataResults, function(hashId, item) {
-//            if (item.state_change && item.state_change!== 'unchanged') {
-//
-//                // Safely scope the find specifically to the report body
-//                var $changedItem = $('#report_table_risu_body').find('#plugin-' + hashId);
-//
-//                if ($changedItem.length > 0) {
-//                    var badgeHtml = `<span class="diff-badge badge-${item.state_change}">${item.state_change.toUpperCase()}</span>`;
-//
-//                    $changedItem.addClass(`row-${item.state_change}`);
-//
-//                    // Only append the badge if it doesn't already exist to prevent duplicates on double-clicks
-//                    if ($changedItem.find('.diff-badge').length === 0) {
-//                        $changedItem.find('.list-group-item-heading').append(badgeHtml);
-//                    }
-//
-//                    // Explicitly force the row open on load
-//                    $changedItem.addClass("list-view-pf-expand-active");
-//                    $changedItem.find(".list-group-item-container").removeClass("hidden").css("display", "block");
-//
-//                    // Explicitly force the down arrow
-//                    $changedItem.find('.list-view-pf-expand span.fa').removeClass('fa-angle-right').addClass('fa-angle-down');
-//                }
-//            }
-//        });
-//    }
-
-    // ========================================================================
-    // 5. EVENT DELEGATION: Explicit State Machine
-    // ========================================================================
-    var $resultContainer = $('#result-container');
-
-    $resultContainer.off('click', '.list-group-item-header').on('click', '.list-group-item-header', function(e) {
-        e.stopPropagation();
-        e.preventDefault();
-
-        var $item = $(this).closest('.list-group-item');
-        var $container = $item.find('.list-group-item-container');
-        var $icon = $(this).find('.list-view-pf-expand span.fa');
-
-        // EXPLICIT STATE CHECK: Determines exactly what to do instead of toggling blindly
-        var isExpanded = $item.hasClass('list-view-pf-expand-active');
-
-        if (isExpanded) {
-            // Row is OPEN. We need to CLOSE it.
-            $item.removeClass('list-view-pf-expand-active');
-            $icon.removeClass('fa-angle-down').addClass('fa-angle-right'); // Force right arrow
-            $container.stop(true, true).slideUp(200);
-        } else {
-            // Row is CLOSED. We need to OPEN it.
-            $item.addClass('list-view-pf-expand-active');
-            $icon.removeClass('fa-angle-right').addClass('fa-angle-down'); // Force down arrow
-            $container.removeClass('hidden').stop(true, true).slideDown(200);
-        }
-    });
-
-    $resultContainer.off('click', '.close').on('click', '.close', function(e) {
-        e.stopPropagation();
-        e.preventDefault();
-
-        var $item = $(this).closest('.list-group-item');
-        var $container = $item.find('.list-group-item-container');
-        var $icon = $item.find('.list-view-pf-expand span.fa');
-
-        // Explicitly close and force right arrow
-        $item.removeClass('list-view-pf-expand-active');
-        $icon.removeClass('fa-angle-down').addClass('fa-angle-right');
-        $container.stop(true, true).slideUp(200);
-    });
+    // 3. Bind Event Listeners
 
     // ========================================================================
     // Table Header Expand/Collapse (Metadata, Profiles, Report)
@@ -166,77 +217,80 @@ debugger; // osc-home
     $("body").on("click", "#report_table_risu_header", function (e) {
       $("#report_table_risu_body").toggle();
     });
-//    $("body").on('click', 'tr[id$="_header"]', function(e) {
-//        e.preventDefault();
-//
-//        // 1. Get the ID of the clicked header (e.g., "metadata_table_risu_header")
-//        var headerId = $(this).attr('id');
-//
-//        // 2. Dynamically construct the ID of the corresponding body
-//        var bodyId = headerId.replace('_header', '_body');
-//        var $body = $('#' + bodyId);
-//
-//        // 3. Toggle the visibility.
-//        // Note: We use.toggle() instead of.slideToggle() because animating
-//        // a <tbody> element's height often breaks table rendering in web browsers.
-//        // $body.toggle(); - does not work instantly.
-//        if($body.is(':visible') == true){
-//            $body.hide();
-//        }
-//        else {
-//            $body.show();
-//        }
-//    });
 
-    // ========================================================================
-    // 6. GLOBAL EXPAND/COLLAPSE ALL FIX
-    // Replaces the default blind toggle with an explicit state machine
-    // ========================================================================
-    $(document).off('click', '#expandAll').on('click', '#expandAll', function(e) {
-        // Prevent the original Risu script in result.html from firing
-        e.preventDefault();
-        e.stopImmediatePropagation();
+    $clusterSelect.on('change', function() {
+        let newCluster = $(this).val();
+        AppConfig.state.cluster = newCluster;
+        AppConfig.state.result = null; // Reset the result when switching clusters
 
-        var $btn = $(this);
-        var isExpanding = $btn.text().trim() === 'Expand All';
-        var $allRows = $('#report_table_risu_body .list-group');
-
-        if (isExpanding) {
-            // Intention: EXPAND. Find ONLY the rows that are currently closed.
-            var $closedRows = $allRows.not('.list-view-pf-expand-active');
-
-            $closedRows.addClass('list-view-pf-expand-active');
-            $closedRows.find('.list-view-pf-expand span.fa').removeClass('fa-angle-right').addClass('fa-angle-down');
-            $closedRows.find('.list-group-item-container').removeClass('hidden').stop(true, true).slideDown(200);
-
-            // Update the button text for the next click
-            $btn.text('Collapse All');
+        if (newCluster) {
+            fetchAndRenderResults(newCluster, '');
         } else {
-            // Intention: COLLAPSE. Find ONLY the rows that are currently open.
-            var $openRows = $allRows.filter('.list-view-pf-expand-active');
-
-            $openRows.removeClass('list-view-pf-expand-active');
-            $openRows.find('.list-view-pf-expand span.fa').removeClass('fa-angle-down').addClass('fa-angle-right');
-            $openRows.find('.list-group-item-container').stop(true, true).slideUp(200);
-
-            // Update the button text for the next click
-            $btn.text('Expand All');
+            setEmptyState();
         }
     });
 
-    // ========================================================================
-    // 7. GLOBAL FILTER BT TEXT ALL FIX
-    // Replaces the default blind toggle with an explicit state machine
-    // ========================================================================
-    //
-    // listener when the user picks a status filter
-    $("body").off("change", ".nx-filter-status").on("change", ".nx-filter-status", function (e) {
-    filterCards();
+    $resultsSelect.on('change', function() {
+        let selectedResult = $(this).val();
+        AppConfig.state.result = selectedResult;
+        loadReportTables(selectedResult);
     });
 
-    // listener when the user writes in the searchbox
-    $(document).off("keyup", "#filter_text").on("keyup", "#filter_text", function(e) {
-        filterCards();
+    $("body").on("click", "#toggle-baseline-btn", function (e) {
+        debugger;
+        console.log("toggle-baseline-btn");
+        toggleBaseline($('#otherJsons').val()); // jsonFile
+    });
+
+    $('#submit-btn').on('click', function () {
+        const clusterId = $('#cluster-select option:selected').val();
+        const clusterName = $('#cluster-select option:selected').text().trim();
+        let selectedResult = '';
+
+        $.ajax({
+            url: '/async-task',
+            method: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify({
+                cluster_id: clusterId,
+                cluster_name: clusterName,
+            }),
+            beforeSend: function () {
+                if (clusterId === undefined  || clusterId == ''){
+                    $('#loading-icon').hide();
+                    $('#submit-btn').prop('disabled', false);
+                    $('#notification').text('');
+                    warnMessage('warning','No cluster selected');
+                    for (var i = 0; i < 3; i++) { // flash 3 times - refactor it
+                        $('#project-location div > button > div.filter-option').fadeOut(250).fadeIn(750);
+                    }
+                    return false;
+                }
+                $('#loading-icon').show();
+                $('#submit-btn').prop('disabled', true);
+            },
+            success: function (resp) {
+                $('#notification').html(resp.notification);
+                AppConfig.state.result = resp.json_check_file;
+                AppConfig.state.cluster = resp.cluster_id;
+                fetchAndRenderResults(AppConfig.state.cluster, AppConfig.state.result);
+                $resultsSelect.val(AppConfig.state.result).selectpicker('refresh');
+                selectedResult = $resultsSelect.val();
+                AppConfig.state.result = selectedResult;
+                window.reportData = resp.data;
+                console.info("Cluster get check results success: %s. Filename: %s", clusterName, selectedResult);
+                loadReportTables(selectedResult);
+            },
+            error: function (xhr, status, err) {
+                console.error("AJAX error:", err);
+                alert("AJAX error: " + err);
+            },
+            complete: function () {
+                $('#loading-icon').hide();
+                $('#submit-btn').prop('disabled', false);
+            }
+        });
+
     });
 
 });

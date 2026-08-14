@@ -8,21 +8,19 @@
         <div class="col-sm-12">
           <form class="toolbar-pf-actions">
             <div class="form-group toolbar-pf-filter">
-              <label class="sr-only" for="filter_text">Filter By Name</label>
-              <div class="input-group">
-                <div class="input-group-btn">
-                  <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                    Name <span class="caret"></span>
-                  </button>
-                  <ul class="dropdown-menu">
-                    <li class="selected"><a href="#">Name</a></li>
-                  </ul>
-                </div>
-                <input type="search" class="form-control" id="filter_text" placeholder="Filter...">
+              <div class="input-group" style="display:inline-flex; align-items: baseline;">
+                <label class="control-label" for="filter_text" style="padding-right:3px; text-wrap-mode: nowrap;">Filter by search</label>
+                <!-- the help icon and tooltip -->
+                <span class="pficon pficon-info" data-toggle="tooltip" data-placement="top" title="" data-original-title="Filter results by searching for word in check results (lower case)." style="padding-right:3px;"></span>
+                <input type="search" class="form-control" id="filter_text" placeholder="type to search...">
               </div>
             </div>
 
             <div class="form-group">
+              <label>Sort</label>
+                 <!-- the help icon and tooltip -->
+                <span class="pficon pficon-info" data-toggle="tooltip" data-placement="top" title="" data-original-title="Sort results by execution priority, Name of check script, execution Staus"></span>
+
               <div class="dropdown btn-group">
                 <button id="plugin-sort" type="button" data-sortfield="priority" class="btn btn-default dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" data-toggle="tooltip" data-placement="top" title="Filter diagnostic results by execution priority or severity level.">
                   Priority <span class="caret"></span>
@@ -59,15 +57,12 @@
 
 <!--                  <ul class="dropdown-menu dropdown-menu-right"></ul>-->
 <!--                </div>-->
-
-                <select class="selectpicker form-control input-medium" id="otherJsons"
+                <select class="selectpicker form-control" id="otherJsons"
+                                title="Select check result"
                                 data-live-search="true"
                                 data-width="300px"
                                 data-size="10"
-                                aria-describedby="check-results-to"
                                 data-error="The value is empty!" data-minlength="6" required >
-
-<!--                    <option value="" data-content=""></option>-->
                 </select>
 
                 <button id="categories-btn" type="button" class="btn btn-default" data-toggle="modal" data-target="#modal-categories" data-toggle="tooltip" data-placement="top" title="Select specific infrastructure components (e.g., storage, network) to include in the report.">
@@ -77,7 +72,7 @@
                 <button type="button" class="btn btn-default" id="expandAll">
                   Expand All
                 </button>
-                <button class="btn btn-primary" id="toggle-baseline-btn" title="Toggle Baseline Status">
+                <button class="btn btn-default" id="toggle-baseline-btn" title="Toggle Baseline Status">
                     <span class="fa fa-star-o" id="baseline-icon"></span> Baseline
                 </button>
               </div>

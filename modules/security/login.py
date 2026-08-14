@@ -93,7 +93,13 @@ def extract_login_command(cluster_name: str) -> dict:
 def oc_login2(cluster_uuid: str, credentials_store:ClusterCredentialStore):
     credentials:ClusterCredential = credentials_store.get_credential(credential_id=cluster_uuid)
 
-    cmd = ["oc", "login", f"--token={credentials.token}", f"--server={credentials.server}"]
+    credentials_token = ''
+    if credentials.token is not None and credentials.token != '':
+        credentials_token = credentials.token
+    elif credentials.certificate is not  None and credentials.certificate != '':
+        credentials_token = credentials.certificate
+
+    cmd = ["oc", "login", f"--token={credentials_token}", f"--server={credentials.server}"]
     if credentials.insecure:
         cmd.append("--insecure-skip-tls-verify=true")
 
@@ -118,14 +124,18 @@ def oc_login2(cluster_uuid: str, credentials_store:ClusterCredentialStore):
         }
     except subprocess.CalledProcessError as e:
         LOGGER.error(f"Login failed for cluster {credentials.name}: {e.stderr or str(e)}")
-        return {"error": e.stderr or str(e)}
+        return {"error": e.stderr or str(e),
+                "uuid": cluster_uuid
+                }
 
     except Exception as e:
         if credentials is not None:
-            LOGGER.error(f"Unexpected error during login to cluster {credentials.name}: {str(e)}")
+            LOGGER.error(f"Unexpected error during login to cluster {credentials.uuid}: {str(e)}")
         else:
             LOGGER.error(f"Unexpected error during login to cluster (UUID={cluster_uuid}): {str(e)}")
-        return {"error": str(e)}
+        return {"error": str(e),
+                "uuid":cluster_uuid
+                }
 
 def oc_login(cluster_name: str):
     """

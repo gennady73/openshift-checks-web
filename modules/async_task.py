@@ -65,16 +65,16 @@ async def perform_async_task():
     # return "Task completed successfully"
 
 
-async def perform_async_task_2(cluster_name: str, login_attributes: None, timestamp :str | None, dest_dir :str | None):
+async def perform_async_task_2(cluster_id: str, login_attributes: None, timestamp: str | None, dest_dir: str | None):
     # Simulate a long-running asynchronous task
     # await asyncio.sleep(5)
     logging.getLogger('apscheduler').debug(f"get_data_from_cluster task begin.")
-    result, result_file_name = get_data_from_cluster(cluster_name, login_attributes, timestamp, dest_dir)
+    result, result_file_name = get_data_from_cluster(cluster_id, login_attributes, timestamp, dest_dir)
     logging.getLogger('apscheduler').debug(f"get_data_from_cluster task result={result}")
     # return "Task completed successfully"
     return result, result_file_name
 
-def get_data_from_cluster(cluster_name: str, login_attributes: None, timestamp :str | None, dest_dir :str | None):
+def get_data_from_cluster(cluster_id: str, login_attributes: None, timestamp : str | None, dest_dir : str | None):
     try:
         relative_path = "../openshift-checks"
         absolute_path = os.path.abspath(relative_path)
@@ -87,17 +87,18 @@ def get_data_from_cluster(cluster_name: str, login_attributes: None, timestamp :
         #        f"--insecure-skip-tls-verify=true && " \
         #       f"risu.py -l"
         if not login_attributes:
-            login_attributes = extract_login_command(cluster_name)
+            login_attributes = extract_login_command(cluster_id)
 
         if timestamp is None:
             ts_scheduled = datetime.now().strftime('%Y%m%d-%H%M%S')
         else: # convert '%Y-%m-%d %H:%M:%S' to '%Y%m%d-%H%M%S'
             ts_scheduled = timestamp.replace('-', '').replace(':', '').replace(' ', '-')
 
-        result_file_name = f"{ts_scheduled}-{cluster_name}-{login_attributes['cluster']}.json"
+        # result_file_name = f"{ts_scheduled}-{cluster_id}-{login_attributes['uuid']}.json"
+        result_file_name = f"{ts_scheduled}-{cluster_id}.json"
 
         if dest_dir is not None and dest_dir.strip() != '':
-            result_file_name_out_path = os.path.join(dest_dir.strip(), result_file_name)
+            result_file_name_out_path = os.path.join(dest_dir.strip(), cluster_id, result_file_name)
         else:
             result_file_name_out_path = result_file_name
 
@@ -120,9 +121,15 @@ def get_data_from_cluster(cluster_name: str, login_attributes: None, timestamp :
 
         if error:
             print('The command execution error:', error, file=sys.stderr)
-            logging.getLogger('apscheduler').info(f"The command execution error : {error}")
+            logging.getLogger('apscheduler').error(f"The command execution error : {error}")
         else:
-            logging.getLogger('apscheduler').error(f"The command execution success : {output}")
+            logging.getLogger('apscheduler').info(f"The command execution success : {cluster_id}")
+            try:
+                info = str(output).split(r'\n\n')[:4]
+                for i in info:
+                    logging.getLogger('apscheduler').info(f"The command execution details : {i}.")
+            except Exception as e:
+                logging.getLogger('apscheduler').warning(f"The command execution details : {e}.")
 
         return output, result_file_name
     except subprocess.CalledProcessError as e:

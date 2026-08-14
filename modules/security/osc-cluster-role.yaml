@@ -1,0 +1,14 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: os-checker-admin-no-delete
+rules:
+# 1. Grant all actions EXCEPT delete/deletecollection across all API groups
+- apiGroups: ["*"]
+  resources: ["*"]
+  verbs: ["get", "list", "watch", "create", "update", "patch"]
+# 2. Specifically allow the 'use' verb on the privileged SCC required for oc debug node
+- apiGroups: ["security.openshift.io"]
+  resources: ["securitycontextconstraints"]
+  resourceNames: ["privileged"]
+  verbs: ["use"]

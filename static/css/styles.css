@@ -83,6 +83,7 @@ body {
     position: relative;
     height: 100%;
     overflow: auto;
+    border-right-style: groove;
 }
 
 #flaskcode-list .list-header {

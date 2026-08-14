@@ -3,10 +3,10 @@
 
     <!-- Nav tabs -->
     <ul class="nav nav-tabs" role="navigation">
-        <li role="navigation" {% if active_tab2=="LastCheckResults" %} class="active" {% endif %} id="home-results-tab">
+        <li role="navigation" {% if active_tab2=="LastCheckResults" %} class="active tab-nav-item" {% else %} class="tab-nav-item" {% endif %} id="home-results-tab">
             <a href="{{ url_for('home') }}" role="tab">Last check results</a>
         </li>
-        <li role="navigation" {% if active_tab2=="Settings" %} class="active" {% endif %} id="home-settings-tab">
+        <li role="navigation" {% if active_tab2=="Settings" %} class="active tab-nav-item" {% else %} class="tab-nav-item" {% endif %} id="home-settings-tab">
             <a href="{{ url_for('settings') }}" role="tab">Settings</a>
         </li>
     </ul>

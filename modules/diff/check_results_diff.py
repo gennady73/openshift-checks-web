@@ -22,14 +22,22 @@ diff_blueprint: Blueprint = Blueprint('diff', __name__, template_folder='templat
 CHECK_RESULT_DIR_NAME = 'results' # in future releases, this value must be retrieved from the app config.
 
 # The default name pattern of "result" file: <YYYYMMDD>-<HHMMSS>-<CLUSTER_ID>-<CLUSTER_NAME>.json
-RESULT_DIR_REGEX_PATTERN = r"([\d]{8}-[\d]{6})(-)[0-9]+(-)([\w\d\-]+)(.json)"
+# RESULT_DIR_REGEX_PATTERN = r"([\d]{8}-[\d]{6})(-)[0-9]+(-)([\w\d\-]+)(.json)"
+# The default name pattern of "result" file: <YYYYMMDD>-<HHMMSS>-<CLUSTER_UUID>-<CLUSTER_NAME>.json
+# Regex for UUID4 (standard in OpenShift)
+# uuid_pattern = r'[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}'
+RESULT_DIR_REGEX_PATTERN = (r"([\d]{8}-[\d]{6})(-)"
+                            r"([0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})"
+                            r"((-)([\w\d\-]+))?(.json)")
 
 DIFF_RESULT_DIR_NAME = 'diffs' # in future releases, this value must be retrieved from the app config.
 # The default name pattern of "result" file:
 # <YYYYMMDD>-<HHMMSS>-<CLUSTER_ID>-<CLUSTER_NAME>_to_<YYYYMMDD>-<HHMMSS>-<CLUSTER_ID>-<CLUSTER_NAME>_diff.json
-DIFF_RESULT_DIR_REGEX_PATTERN = (r"([\d]{8}-[\d]{6})(-)[0-9]+(-)([\w\d\-]+)"
+DIFF_RESULT_DIR_REGEX_PATTERN = (r"([\d]{8}-[\d]{6})(-)"
+                                 r"([0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})"
                                  r"(_to_)"
-                                 r"([\d]{8}-[\d]{6})(-)[0-9]+(-)([\w\d\-]+)"
+                                 r"([\d]{8}-[\d]{6})(-)"
+                                 r"([0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})"
                                  r"(_diff.json)")
 
 STATIC_DATA_BLUEPRINT:Blueprint|None = None
@@ -162,14 +170,69 @@ def clear_messages():
 #     matched_file_names.sort(reverse=True)
 #     return matched_file_names
 
-def json_files_list(directory: str, pattern: str | None = None, start_date=None, end_date=None) -> list:
+# OLD VERSION
+# def json_files_list(directory: str, pattern: str | None = None, start_date=None, end_date=None) -> list:
+#     if pattern is None or pattern.strip() == '':
+#         pattern = RESULT_DIR_REGEX_PATTERN
+#     regex = re.compile(pattern)
+#
+#     matched_artifacts = []
+#
+#     for f in os.listdir(directory):
+#         if not f.endswith('.json'):
+#             continue
+#
+#         match = regex.match(f)
+#         if match:
+#             # Extract the timestamp group (e.g., '20260326-101026')
+#             timestamp_str = match.group(1)
+#             file_dt = datetime.strptime(timestamp_str, "%Y%m%d-%H%M%S")
+#
+#             # Apply time boundaries from the AJAX request
+#             if start_date and file_dt < start_date:
+#                 continue
+#             if end_date and file_dt > end_date:
+#                 continue
+#
+#             file_path = os.path.join(directory, f)
+#             is_baseline = False
+#
+#             # Open the JSON file to check for the baseline flag
+#             try:
+#                 with open(file_path, 'r') as json_file:
+#                     data = json.load(json_file)
+#                     # Check if metadata exists and is_baseline is true
+#                     if data.get('metadata', {}).get('is_baseline') is True:
+#                         is_baseline = True
+#             except Exception as e:
+#                 print(f"Error reading artifact {f}: {e}")
+#
+#             matched_artifacts.append({
+#                 'filename': f,
+#                 'is_baseline': is_baseline,
+#                 'execution_date': file_dt
+#             })
+#
+#     # Sort descending (newest first) based on the exact execution date
+#     matched_artifacts.sort(key=lambda x: x['execution_date'], reverse=True)
+#
+#     # Strip the datetime object before returning the JSON payload to the frontend
+#     return [{"filename": item["filename"], "is_baseline": item["is_baseline"]} for item in matched_artifacts]
+
+def json_files_list(directory: str, pattern: str | None = None, start_date=None, end_date=None, cluster_id=None) -> list:
     if pattern is None or pattern.strip() == '':
         pattern = RESULT_DIR_REGEX_PATTERN
     regex = re.compile(pattern)
 
     matched_artifacts = []
 
-    for f in os.listdir(directory):
+    directory_path = os.path.join(directory,cluster_id) if cluster_id is not None and cluster_id != '0' else directory
+
+    if not os.path.exists(directory_path):
+        os.makedirs(os.path.abspath(directory_path))
+        return []
+
+    for f in os.listdir(directory_path):
         if not f.endswith('.json'):
             continue
 
@@ -185,7 +248,7 @@ def json_files_list(directory: str, pattern: str | None = None, start_date=None,
             if end_date and file_dt > end_date:
                 continue
 
-            file_path = os.path.join(directory, f)
+            file_path = os.path.join(directory_path, f)
             is_baseline = False
 
             # Open the JSON file to check for the baseline flag
@@ -208,7 +271,7 @@ def json_files_list(directory: str, pattern: str | None = None, start_date=None,
     matched_artifacts.sort(key=lambda x: x['execution_date'], reverse=True)
 
     # Strip the datetime object before returning the JSON payload to the frontend
-    return [{"filename": item["filename"], "is_baseline": item["is_baseline"]} for item in matched_artifacts]
+    return [{"filename": item["filename"], "is_baseline": item["is_baseline"], "execution_date": item["execution_date"].strftime("%Y-%m-%d %H:%M:%S")} for item in matched_artifacts]
 
 
 @diff_blueprint.route('/monaco-editor/<path:subpath>', methods=['GET'])
@@ -236,6 +299,9 @@ def local_web_resources(subpath):
 
 @diff_blueprint.route('/data/list/from', methods=['GET'])
 def check_result_data_list_from():
+    # Capture the active cluster ID sent by the JS AJAX call
+    cluster_id = request.args.get('cluster_id')
+
     start_str = request.args.get('start_date')
     end_str = request.args.get('end_date')
 
@@ -247,7 +313,8 @@ def check_result_data_list_from():
         directory=CHECK_RESULT_PATH,
         pattern=RESULT_DIR_REGEX_PATTERN,
         start_date=start_date,
-        end_date=end_date
+        end_date=end_date,
+        cluster_id=cluster_id
     )
 
     return jsonify(filtered_files)
@@ -276,11 +343,75 @@ def check_result_data_list_to():
 
     return jsonify(filtered_files)
 
+# OLD VERSION - maybe will reused for 'all clusters' feature
+# @diff_blueprint.route('/data/list', methods=['GET'])
+# def diff_result_data_list():
+#     json_diff_list = json_files_list(directory=DIFF_RESULT_PATH, pattern=DIFF_RESULT_DIR_REGEX_PATTERN)
+#     return jsonify(json_diff_list)
 
 @diff_blueprint.route('/data/list', methods=['GET'])
-def diff_result_data_list():
-    json_diff_list = json_files_list(directory=DIFF_RESULT_PATH, pattern=DIFF_RESULT_DIR_REGEX_PATTERN)
-    return jsonify(json_diff_list)
+def check_result_data_list():
+    # Capture the active cluster ID sent by the JS AJAX call
+    cluster_id = request.args.get('cluster_id')
+
+    start_str = request.args.get('start_date')
+    end_str = request.args.get('end_date')
+
+    # ... existing datetime parsing logic...
+    start_date = None
+    end_date = None
+    if start_str and end_str:
+        start_date = datetime.strptime(start_str, "%Y%m%d-%H%M%S")
+        end_date = datetime.strptime(end_str, "%Y%m%d-%H%M%S")
+
+    # Pass the cluster_id to your existing json_files_list function
+    # Update that function's regex or logic to only return files matching this specific cluster
+    filtered_files = json_files_list(
+        directory=DIFF_RESULT_PATH,
+        pattern=DIFF_RESULT_DIR_REGEX_PATTERN, # RESULT_DIR_REGEX_PATTERN,
+        start_date=start_date,
+        end_date=end_date,
+        cluster_id=cluster_id
+    )
+
+    return jsonify(filtered_files)
+
+@diff_blueprint.route('/data/state', methods=['GET', 'PUT'])
+def diff_state():
+    if request.method == 'PUT':
+
+        cluster_id  = request.args.get('cluster_id', 0)
+        cluster_name = request.args.get('cluster_name', '')
+        selected_check_result_from = request.args.get('selected_check_result_from')
+        selected_check_result_to = request.args.get('selected_check_result_to')
+        selected_diff_result = request.args.get('selected_diff_result')
+
+        session['cluster_id'] = request.args.get('cluster_id', '0')
+        session['cluster_name'] = request.args.get('cluster_name', '')
+        session['selected_check_result_from'] = request.args.get('selected_check_result_from')
+        session['selected_check_result_to'] = request.args.get('selected_check_result_to')
+        session['selected_diff_result'] = request.args.get('selected_diff_result')
+
+        return jsonify({
+            "cluster_id" : cluster_id,
+            "cluster_name" : cluster_name,
+            "check_results_from" : selected_check_result_from,
+            "check_results_to": selected_check_result_to,
+            "selected_diff_result": selected_diff_result,
+        })
+    elif request.method == 'GET':
+        cluster_id = session.get('cluster_id', '0')
+        result_file_name = session.get('selected_diff_result', 'osc.json')
+        return jsonify({"cluster_id": cluster_id,
+                        "cluster_name": session.get('cluster_name'),
+                        "check_results_from": session.get('check_results_from', ''),
+                        "check_results_to": session.get('check_results_to', ''),
+                        "selected_diff_result": result_file_name,
+                        # "start_date": session.get('check_results_from', ''),
+                        # "end_date": session.get('check_results_to', ''),
+                        })
+    else:
+        return 405
 
 @diff_blueprint.route('/data/selected', methods=['GET'])
 def diff_result_file_name():
@@ -293,10 +424,10 @@ def diff_home():
     # list_json_from = json_files_list(directory=static_ext1_blueprint.static_folder, pattern=RESULT_DIR_REGEX_PATTERN)
     # list_json_to = json_files_list(directory=static_ext1_blueprint.static_folder, pattern=RESULT_DIR_REGEX_PATTERN)
     # json_diff_list = json_files_list(directory=static_ext1_blueprint.static_folder, pattern=DIFF_RESULT_DIR_REGEX_PATTERN)
-
-    list_json_from = json_files_list(directory=CHECK_RESULT_PATH, pattern=RESULT_DIR_REGEX_PATTERN)
-    list_json_to = json_files_list(directory=CHECK_RESULT_PATH, pattern=RESULT_DIR_REGEX_PATTERN)
-    json_diff_list = json_files_list(directory=DIFF_RESULT_PATH, pattern=DIFF_RESULT_DIR_REGEX_PATTERN)
+    selected_cluster = session.get('selected_cluster', '0')
+    list_json_from = json_files_list(directory=CHECK_RESULT_PATH, pattern=RESULT_DIR_REGEX_PATTERN, cluster_id=selected_cluster)
+    list_json_to = json_files_list(directory=CHECK_RESULT_PATH, pattern=RESULT_DIR_REGEX_PATTERN, cluster_id=selected_cluster)
+    json_diff_list = json_files_list(directory=DIFF_RESULT_PATH, pattern=DIFF_RESULT_DIR_REGEX_PATTERN, cluster_id=selected_cluster)
 
     qs = request.query_string.decode()
     if request.method == 'GET' and request.args.get('json'):
@@ -337,6 +468,8 @@ def get_json_data(filename):
     # else:
     #     json_file_path = os.path.join(os.path.abspath(static_ext1_blueprint.static_folder), request.path.replace('/diff/',''))
 
+    cluster_id = session.get('selected_cluster', '0')
+
     if filename is not None:
         json_file_name = f"{filename}.json"
     else:
@@ -344,12 +477,23 @@ def get_json_data(filename):
 
     if json_file_name.endswith('_diff.json') and DIFF_RESULT_DIR_REGEX.match(json_file_name):
         directory = DIFF_RESULT_PATH
+        directory_path = os.path.join(directory,
+                                      cluster_id) if cluster_id is not None and cluster_id != '0' else directory
+
+        selected_from_to = json_file_name.replace('_diff.json','').split('_to_')
+        if len(selected_from_to) == 2:
+            session['selected_diff_result'] = json_file_name
+            session['selected_check_result_from'] = f"{selected_from_to[0]}.json"
+            session['selected_check_result_to'] =  f"{selected_from_to[1]}.json"
+
     elif (not json_file_name.endswith('_diff.json') and RESULT_DIR_REGEX.match(json_file_name)) or json_file_name == 'osc.json':
         directory = CHECK_RESULT_PATH
+        directory_path = os.path.join(directory,
+                                      cluster_id) if cluster_id is not None and cluster_id != '0' else directory
     else:
         return 404
 
-    json_file_path = os.path.join(directory, f"{json_file_name}")
+    json_file_path = os.path.join(directory_path, f"{json_file_name}")
 
     try:
         # Open the file and load the data into a Python dictionary/list
@@ -492,7 +636,7 @@ def get_json_data(filename):
 #
 #     return comparison_data  #jsonify(comparison_data)
 
-async def async_get_diff_data(cluster_name:str, diff_from:str, diff_to:str, timestamp:str):
+async def async_get_diff_data(cluster_id: str, diff_from: str, diff_to: str, timestamp: str):
     """Reads two snapshot JSONs, calculates the delta, and returns the hydration payload."""
 
     try:
@@ -652,9 +796,9 @@ async def async_task_route():
         diff_to = request_json['check_results_to']                  # 'snapshot_2.json'
         selected_diff = session.get('selected_diff_result', None)   # 'snapshot_diff.json' request_json['selected_diff_result'] or from
 
-        list_json_from = json_files_list(directory=CHECK_RESULT_PATH, pattern=RESULT_DIR_REGEX_PATTERN)
-        list_json_to = json_files_list(directory=CHECK_RESULT_PATH, pattern=RESULT_DIR_REGEX_PATTERN)
-        json_diff_list = json_files_list(directory=DIFF_RESULT_PATH, pattern=DIFF_RESULT_DIR_REGEX_PATTERN)
+        list_json_from = json_files_list(directory=CHECK_RESULT_PATH, pattern=RESULT_DIR_REGEX_PATTERN, cluster_id=cluster_id)
+        list_json_to = json_files_list(directory=CHECK_RESULT_PATH, pattern=RESULT_DIR_REGEX_PATTERN, cluster_id=cluster_id)
+        json_diff_list = json_files_list(directory=DIFF_RESULT_PATH, pattern=DIFF_RESULT_DIR_REGEX_PATTERN, cluster_id=cluster_id)
 
         # just a mock
         diff_attributes = {
@@ -688,10 +832,8 @@ async def async_task_route():
             selected_check_result_to =  'osc.json'
         else:
             result = await asyncio.wait_for(asyncio.gather(
-                async_get_diff_data(cluster_name=cluster_id,
-                                    diff_from=os.path.join(CHECK_RESULT_PATH, diff_from),
-                                    diff_to=os.path.join(CHECK_RESULT_PATH, diff_to),
-                                    timestamp=timestamp)),
+                async_get_diff_data(cluster_id=cluster_id, diff_from=os.path.join(CHECK_RESULT_PATH, cluster_id, diff_from),
+                                    diff_to=os.path.join(CHECK_RESULT_PATH, cluster_id, diff_to), timestamp=timestamp)),
                 timeout=600)
 
             if len(result) > 0:
@@ -700,7 +842,7 @@ async def async_task_route():
                     flash(f'Task execution is scheduled at {timestamp}.', 'success')
                     result_file_name = f"{diff_from.replace('.json', '')}_to_{diff_to.replace('.json', '')}_diff.json"
 
-                    with open(os.path.join(DIFF_RESULT_PATH, result_file_name),
+                    with open(os.path.join(DIFF_RESULT_PATH, cluster_id, result_file_name),
                               "w") as json_diff_file:
                         json.dump(output, json_diff_file, indent=4)
 
@@ -756,6 +898,7 @@ async def async_task_route():
 
 if __name__ == '__main__':
     timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-    json_diff = async_get_diff_data(diff_from='snapshot_1.json',diff_to='snapshot_2.json',cluster_name='', timestamp=timestamp)
+    json_diff = async_get_diff_data(cluster_id='', diff_from='snapshot_1.json', diff_to='snapshot_2.json',
+                                    timestamp=timestamp)
     with open("snapshot_diff.json", "w") as json_file:
         json.dump(json_diff, json_file, indent=4)

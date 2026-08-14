@@ -1,0 +1,604 @@
+/* 1. Import Core PatternFly 3 Variables & Styles */
+$font-path: "../../local-web-resources/cdnjs.cloudflare.com/ajax/libs/patternfly/3.59.3/fonts/";
+/* $font-path: "../../local-web-resources/font-awesome/4.7.0/fonts/"; */
+
+/* ========================================================================== */
+/* DARK THEME VARIABLE OVERRIDES (Must be defined BEFORE imports)             */
+/* ========================================================================== */
+$body-bg: #121212;
+$text-color: #d1d1d1;
+$link-color: #39a5dc;
+$link-hover-color: #70c8ff;
+
+/* PatternFly specific background overrides */
+$bg-color-pf: #121212;
+$card-pf-bg-color: #1e1e1e;
+
+/* Tables */
+$table-bg: #1e1e1e;
+$table-bg-accent: #252525;
+$table-border-color: #373737;
+$table-bg-hover: #2c2c2c;
+
+/* Panels & List Views */
+$panel-bg: #1e1e1e;
+$panel-inner-border: #373737;
+$panel-default-border: #373737;
+$panel-default-heading-bg: #252525;
+$list-group-bg: #1e1e1e;
+$list-group-border: #373737;
+$list-group-hover-bg: #252525;
+
+/* Form Inputs & Select Boxes */
+$input-bg: #252525;
+$input-color: #eeeeee;
+$input-border: #444444;
+$input-border-focus: #39a5dc;
+
+/* Dropdowns */
+$dropdown-bg: #1e1e1e;
+$dropdown-border: #373737;
+$dropdown-link-color: #d1d1d1;
+$dropdown-link-hover-bg: #252525;
+$dropdown-link-hover-color: #ffffff;
+
+/* Modals */
+$modal-content-bg: #1e1e1e;
+$modal-header-border-color: #373737;
+$modal-footer-border-color: #373737;
+
+
+/* ========================================================================== */
+/* FRAMEWORK IMPORTS                                                          */
+/* ========================================================================== */
+@import "../../local-web-resources/cdnjs.cloudflare.com/ajax/libs/patternfly/3.59.3/sass/patternfly/dependencies/bootstrap-sass/3.4.1/assets/stylesheets/bootstrap";
+@import "../../local-web-resources/cdnjs.cloudflare.com/ajax/libs/patternfly/3.59.3/sass/patternfly/dependencies/bootstrap-sass/3.4.1/assets/stylesheets/bootstrap/variables";
+@import "../../local-web-resources/cdnjs.cloudflare.com/ajax/libs/patternfly/3.59.3/sass/patternfly/fonts";
+
+@import "../../local-web-resources/cdnjs.cloudflare.com/ajax/libs/patternfly/3.59.3/sass/patternfly/variables";
+@import "../../local-web-resources/font-awesome/4.7.0/scss/variables";
+@import "../../local-web-resources/cdnjs.cloudflare.com/ajax/libs/patternfly/3.59.3/sass/patternfly";
+
+
+/* ==========================================================================
+   GLOBAL LAYOUT (layout.html)
+   ========================================================================== */
+
+.masthead-help-icon {
+    color: #fff;
+    padding: 20px 15px;
+
+   .fa-question-circle {
+        font-size: 16px;
+    }
+}
+
+.help-empty-state {
+    display: none;
+    padding: 10px 20px;
+    color: #8a8d90;
+}
+
+.help-dropdown-header {
+    text-transform: uppercase;
+    font-weight: bold;
+}
+
+/* ==========================================================================
+   HOME & DIFF PAGES (home.html, diff.html, tab_nav.html)
+   ========================================================================== */
+
+.baseline-indicator {
+    color: #f0ab00;
+    font-weight: bold;
+}
+
+.combo-box-wrapper {
+    padding-top: 12px;
+}
+
+.bootstrap-select.dropdown-menu {
+    width: auto!important;
+    min-width: 100%;
+    white-space: nowrap;
+}
+
+/* ==========================================================================
+   SETTINGS PAGE (settings.html)
+   ========================================================================== */
+
+.table-token-column {
+    max-width: 350px;
+    word-wrap: break-word;
+    word-break: break-all;
+    white-space: normal;
+}
+
+/* ==========================================================================
+   HELP MODALS (partials/help/*.html)
+   ========================================================================== */
+
+.help-section-spacing {
+    margin-top: 30px;
+}
+
+/* Inverted to fit dark mode palette */
+.help-code-snippet {
+    background-color: #252525;
+    padding: 15px;
+    border: 1px solid #444;
+    color: #eee;
+}
+
+.help-bash-snippet {
+    background-color: #2b2b2b;
+    color: #f8f8f2;
+    padding: 15px;
+    border-radius: 4px;
+    border: none;
+    font-family: monospace;
+}
+
+/* ==========================================================================
+   COMPONENT COLORS (DARK)
+   ========================================================================== */
+
+.toolbar-pf { background: #1e1e1e; }
+
+/* Diff Row Status Backgrounds (Dark Equivalents) */
+.list-group-item.row-degraded, .list-group-item.row-degraded.list-view-pf-expand-active { background-color: #2b1515 !important; border-left: 4px solid #c9190b !important; }
+.list-group-item.row-resolved, .list-group-item.row-resolved.list-view-pf-expand-active { background-color: #172b15 !important; border-left: 4px solid #3e8635 !important; }
+.list-group-item.row-new, .list-group-item.row-new.list-view-pf-expand-active { background-color: #152433 !important; border-left: 4px solid #06c !important; }
+.list-group-item.row-changed, .list-group-item.row-changed.list-view-pf-expand-active { background-color: #332a12 !important; border-left: 4px solid #f0ab00 !important; }
+.list-group-item.row-removed { background-color: #252525 !important; border-left: 4px solid #8a8d90 !important; text-decoration: line-through; }
+
+/* Diff Badges (Keeping standard PF3 colors, ensuring text is white) */
+.badge-degraded { background-color: #c9190b; color: white; }
+.badge-resolved { background-color: #3e8635; color: white; }
+.badge-new { background-color: #06c; color: white; }
+.badge-changed { background-color: #f0ab00; color: white; }
+.badge-removed { background-color: #8a8d90; color: white; }
+
+/* ==========================================================================
+   MASTHEAD THEME TOGGLE
+   ========================================================================== */
+
+/* Container to align the toggle inline with the Help icon */
+.masthead-theme-toggle {
+    display: inline-flex;
+    align-items: center;
+    vertical-align: middle;
+    padding: 0 10px;
+    height: 100%;
+
+    .toggle-label {
+        color: #aaa;
+        font-size: 14px;
+        padding: 0 5px;
+
+        .fa-sun-o { color: #f0ab00; } /* Gold sun */
+        .fa-moon-o { color: #39a5dc; } /* PatternFly blue moon */
+    }
+}
+
+/* The core switch wrapper */
+.theme-switch {
+    position: relative;
+    display: inline-block;
+    width: 36px;
+    height: 20px;
+    margin-bottom: 0; /* Reset bootstrap default */
+    vertical-align: middle;
+
+    input {
+        opacity: 0;
+        width: 0;
+        height: 0;
+    }
+}
+
+/* The slider track */
+.slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background-color: #444;
+    transition: .3s;
+    border: 1px solid #666;
+
+    /* The slider knob */
+    &:before {
+        position: absolute;
+        content: "";
+        height: 12px;
+        width: 12px;
+        left: 3px;
+        bottom: 3px;
+        background-color: white;
+        transition: .3s;
+    }
+}
+
+/* When checked (Dark Mode active) */
+input:checked + .slider {
+    background-color: #39a5dc; /* Changes track to PatternFly Blue */
+    border-color: #2b7096;
+}
+
+input:checked + .slider:before {
+    transform: translateX(16px);
+}
+
+/* Rounded slider look */
+.slider.round {
+    border-radius: 20px;
+    &:before {
+        border-radius: 50%;
+    }
+}
+
+
+/* SWITCH */
+.onoffswitch {
+    position: relative; width: 90px;
+    -webkit-user-select:none; -moz-user-select:none; -ms-user-select: none;
+}
+
+.onoffswitch-checkbox {
+    display: none;
+}
+
+.onoffswitch-label {
+    display: block; overflow: hidden; cursor: pointer;
+    border: 2px solid #999999; border-radius: 20px;
+}
+
+.onoffswitch-inner {
+    display: block; width: 200%; margin-left: -100%;
+    -moz-transition: margin 0.3s ease-in 0s; -webkit-transition: margin 0.3s ease-in 0s;
+    -o-transition: margin 0.3s ease-in 0s; transition: margin 0.3s ease-in 0s;
+}
+
+.onoffswitch-inner:before, .onoffswitch-inner:after {
+    display: block; float: left; width: 50%; height: 30px; padding: 0; line-height: 30px;
+    font-size: 14px; color: white; font-family: Trebuchet, Arial, sans-serif; font-weight: bold;
+    -moz-box-sizing: border-box; -webkit-box-sizing: border-box; box-sizing: border-box;
+}
+
+.onoffswitch-inner:before {
+    content: "Light";
+    padding-left: 10px;
+    background-color: #2FCCFF; color: #FFFFFF;
+}
+
+.onoffswitch-inner:after {
+    content: "Dark";
+    padding-right: 10px;
+    background-color: #EEEEEE; color: #999999;
+    text-align: right;
+}
+
+.onoffswitch-switch {
+    display: block; width: 18px; margin: 6px;
+    background: #FFFFFF;
+    border: 2px solid #999999; border-radius: 20px;
+    position: absolute; top: 0; bottom: 0; right: 56px;
+    -moz-transition: all 0.3s ease-in 0s; -webkit-transition: all 0.3s ease-in 0s;
+    -o-transition: all 0.3s ease-in 0s; transition: all 0.3s ease-in 0s;
+}
+
+.onoffswitch-checkbox:checked + .onoffswitch-label .onoffswitch-inner {
+    margin-left: 0;
+}
+
+.onoffswitch-checkbox:checked + .onoffswitch-label .onoffswitch-switch {
+    right: 0px;
+}
+
+/* ==========================================================================
+   NESTED COMPONENTS: TABLES & LIST VIEWS (DARK THEME)
+   ========================================================================== */
+
+/* Standard Bootstrap Tables & Headers (Crush PatternFly Gradients) */
+.table { background-color: #1e1e1e; color: #d1d1d1; }
+.table > thead {
+    background-color: #1e1e1e !important;
+    background-image: none !important;
+}
+.table > thead > tr > th,
+.table > thead > tr > td,
+.table > tbody > tr > th,
+.table > tfoot > tr > th,
+.table > tbody > tr > td,
+.table > tfoot > tr > td {
+    background-color: #1e1e1e !important;
+    background-image: none !important;
+    color: #eeeeee !important;
+    border-top: 1px solid #373737 !important;
+    border-bottom: 1px solid #373737 !important;
+}
+
+/* Ensure table hover doesn't revert to PatternFly's light blue/grey */
+.table-hover > tbody > tr:hover,
+.table-hover > tbody > tr:hover > td,
+.table-hover > tbody > tr:hover > th {
+    background-color: #2a2a2a !important;
+    color: #eeeeee !important;
+}
+
+/* Also ensure PatternFly list view rows behave on hover */
+.list-group.list-view-pf .list-group-item:hover {
+    background-color: #2a2a2a !important;
+}
+
+/* Bordered & Striped Variations */
+.table-bordered, .table-bordered > thead > tr > th, .table-bordered > tbody > tr > td {
+    border: 1px solid #373737 !important;
+}
+.table-striped > tbody > tr:nth-of-type(odd) > td { background-color: #252525 !important; }
+.table-hover > tbody > tr:hover > td { background-color: #2c2c2c !important; }
+
+/* PatternFly List View Overrides */
+.list-group-item { background-color: #1e1e1e; border-color: #373737; }
+.list-group-item:hover { background-color: #252525; }
+.list-group-item-header { color: #d1d1d1; }
+.list-view-pf-main-info { color: #d1d1d1; }
+
+/* Expanded Dropdown Content (Remove the bright blue background) */
+.list-view-pf .list-group-item.list-view-pf-expand-active {
+    background-color: #1a2226 !important; /* Very subtle dark slate/blue */
+    border: 1px solid #373737 !important;
+    box-shadow: none !important;
+}
+.list-group-item-container {
+    background-color: #1e1e1e !important;
+    border-top: 1px solid #373737 !important;
+}
+.list-group-item-container pre {
+    background-color: #121212 !important;
+    color: #d1d1d1 !important;
+    border: 1px solid #373737 !important;
+}
+
+/* Expanded Dropdown Content (Pre blocks and nested containers) */
+.list-view-pf-expand-active,
+.list-group-item.list-view-pf-expand-active {
+    background-color: #252525;
+    border-color: #373737;
+}
+.list-group-item-container {
+    background-color: #1e1e1e;
+    border-top: 1px solid #373737;
+}
+.list-group-item-container pre {
+    background-color: #121212;
+    color: #d1d1d1;
+    border: 1px solid #373737;
+}
+
+/* ==========================================================================
+   CHARTS & TOOLTIPS (DARK THEME)
+   ========================================================================== */
+
+/* Remove white background blocks behind C3/D3 charts */
+.pie-chart-pf,
+.example-pie-chart-mini,
+.c3 svg {
+    background-color: transparent !important;
+}
+
+/* Make chart text readable against dark backgrounds */
+.c3 text { fill: #d1d1d1 !important; }
+
+/* Chart Tooltips */
+.c3-tooltip-container {
+    background-color: #252525;
+    color: #d1d1d1;
+    border: 1px solid #373737;
+}
+.c3-tooltip th {
+    background-color: #1e1e1e;
+    color: #d1d1d1;
+}
+
+/* ==========================================================================
+   TIMEPICKER WIDGET (DARK THEME)
+   ========================================================================== */
+
+.bootstrap-timepicker-widget.dropdown-menu {
+    background-color: #2b2b2b !important; /* Lighter than modal to create contrast */
+    border: 1px solid #555 !important;
+    padding: 8px !important;
+}
+
+/* Style the FontAwesome Up/Down arrows */
+.bootstrap-timepicker-widget table td a {
+    color: #d1d1d1;
+    padding: 4px 0 !important; /* Shrink the click areas to normal size */
+    border-radius: 4px;
+}
+
+.bootstrap-timepicker-widget table td a:hover {
+    background-color: #39a5dc !important; /* PatternFly Blue hover */
+    color: #ffffff;
+    text-decoration: none;
+}
+
+/* Style the number inputs inside the popup */
+.bootstrap-timepicker-widget table td input {
+    background-color: #121212 !important;
+    color: #eeeeee !important;
+    border: 1px solid #444 !important;
+    box-shadow: none !important;
+    text-align: center;
+}
+
+/* Dark theme styling for the input group addon (Clock Icon) */
+#time-picker-group .input-group-addon {
+    background-color: #1e1e1e !important;
+    border-color: #444 !important;
+    color: #eeeeee !important;
+}
+
+/* ==========================================================================
+   READONLY & DISABLED INPUTS (DARK THEME)
+   ========================================================================== */
+.form-control[disabled],
+.form-control[readonly],
+fieldset[disabled] .form-control {
+    background-color: #222222 !important; /* Slightly darker to indicate inactive state */
+    border-color: #444444 !important;
+    color: #8a8d90 !important; /* Muted gray text */
+    cursor: not-allowed;
+    opacity: 1; /* Fixes contrast rendering issues on Safari/iOS */
+}
+
+/* ==========================================================================
+   MODAL HEADER & READONLY INPUTS (DARK THEME)
+   ========================================================================== */
+
+/* Native Dark Modal Header (Replaces the light #f5f5f5 workaround) */
+.modal-header {
+    background-color: #1e1e1e !important;
+    color: #eeeeee !important;
+    border-bottom: 1px solid #373737 !important;
+}
+
+/* Ensure the 'X' close button is visible in dark mode */
+.modal-header .close {
+    color: #eeeeee !important;
+    text-shadow: none;
+    opacity: 0.6;
+}
+.modal-header .close:hover {
+    opacity: 1;
+}
+
+/* Style the Readonly 'jobstore' input to look inactive but dark */
+.form-control[readonly],
+.form-control[disabled] {
+    background-color: #171717 !important; /* Slightly darker than standard inputs */
+    color: #888888 !important; /* Muted text */
+    border-color: #373737 !important;
+    cursor: not-allowed;
+}
+
+/* ==========================================================================
+   COMBO BOXES / BOOTSTRAP-SELECT (DARK THEME)
+   ========================================================================== */
+
+/* Override the default button styling that bootstrap-select uses */
+.bootstrap-select > .dropdown-toggle.btn-default,
+.bootstrap-select > .dropdown-toggle.btn-default:hover,
+.bootstrap-select > .dropdown-toggle.btn-default:focus,
+.bootstrap-select > .dropdown-toggle.btn-default:active {
+    background-color: #1e1e1e !important;
+    background-image: none !important; /* Removes light mode gradients */
+    color: #eeeeee !important;
+    border-color: #373737 !important;
+    box-shadow: none !important;
+}
+
+/* Fix the dropdown menu background and item text */
+.bootstrap-select .dropdown-menu {
+    background-color: #1e1e1e !important;
+    border-color: #373737 !important;
+}
+.bootstrap-select .dropdown-menu > li > a {
+    color: #d1d1d1 !important;
+}
+.bootstrap-select .dropdown-menu > li > a:hover,
+.bootstrap-select .dropdown-menu > li > a:focus,
+.bootstrap-select .dropdown-menu > .active > a {
+    background-color: #2a2a2a !important;
+    color: #ffffff !important;
+}
+
+/* Remove native browser dropdown styling to fix double-arrows
+   (only necessary if you are not initializing bootstrap-select on them) */
+select.form-control {
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    background-image: none !important;
+}
+
+/* ==========================================================================
+   STANDARD DROPDOWNS & BTN-DEFAULT (DARK THEME)
+   ========================================================================== */
+
+/* Apply dark theme to ALL btn-default dropdown toggles (manual or selectpicker) */
+.btn-default.dropdown-toggle,
+.btn-default.dropdown-toggle:hover,
+.btn-default.dropdown-toggle:focus,
+.btn-default.dropdown-toggle:active,
+.open > .dropdown-toggle.btn-default {
+    background-color: #1e1e1e !important;
+    background-image: none !important; /* Kills light mode gradients */
+    color: #eeeeee !important;
+    border-color: #373737 !important;
+    text-shadow: none !important;
+    box-shadow: none !important;
+}
+
+/* Global Dropdown Menu styles (Applies to all UL.dropdown-menu) */
+.dropdown-menu {
+    background-color: #1e1e1e !important;
+    border-color: #373737 !important;
+}
+.dropdown-menu > li > a {
+    color: #d1d1d1 !important;
+}
+.dropdown-menu > li > a:hover,
+.dropdown-menu > li > a:focus,
+.dropdown-menu > .active > a,
+.dropdown-menu > .selected > a {
+    background-color: #2a2a2a !important;
+    color: #ffffff !important;
+}
+
+/* ==========================================================================
+   COMBO BOX / FILTER-OPTION GHOST ARROW FIX (DARK THEME)
+   ========================================================================== */
+/* Nuke any ghost arrows injected */
+/*.caret::before {*/
+/*    content: none !important;*/
+/*}*/
+
+/* ==========================================================================
+   MODERN DROPDOWN CARET (FontAwesome Replacement)
+   ========================================================================== */
+.caret {
+    border: none !important;
+    width: auto;
+    height: auto;
+    margin-top: -3px; /* Adjusts vertical alignment */
+    position-area: x-end;
+    vertical-align: top;
+}
+
+/* 2. Inject a sleek FontAwesome 'angle-down' icon */
+.caret::after {
+    content: "\f107" !important; /* Unicode for fa-angle-down */
+    font-family: "FontAwesome" !important;
+    font-size: 16px;
+    color: #aaa !important; /* Softer color for dark theme */
+    display: inline-block;
+    vertical-align: top;
+}
+
+/* 3. Keep your ghost-arrow fix to ensure no double carets appear */
+.caret::before,
+.bootstrap-select .filter-option::before,
+.bootstrap-select .filter-option::after {
+    content: none !important;
+    display: none !important;
+    vertical-align: top;
+}
+
+/* Perfectly vertically center the bootstrap-select caret */
+.bootstrap-select .dropdown-toggle .caret {
+    top: 50%!important;
+    margin-top: 0!important;
+    transform: translateY(-50%);
+}

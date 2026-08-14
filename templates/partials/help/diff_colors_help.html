@@ -1,0 +1,44 @@
+<div class="modal fade" id="diffColorsHelpModal" tabindex="-1" role="dialog" aria-labelledby="diffColorsHelpModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal" aria-hidden="true">
+          <span class="pficon pficon-close"></span>
+        </button>
+        <h4 class="modal-title" id="diffColorsHelpModalLabel">Understanding Diff Colors</h4>
+      </div>
+      <div class="modal-body">
+        <p>The Diff page compares two historical OpenShift states to determine what has changed in your cluster. The interface uses specific color-coded badges and rows to highlight how the configuration or health status has drifted between the two points in time.</p>
+
+        <table class="table table-bordered table-striped" style="margin-top: 20px;">
+          <tbody>
+            <tr>
+              <td style="width: 120px; text-align: center; vertical-align: middle;"><span class="label" style="background-color: #f0ab00; color: white; border-radius: 10px;">CHANGED</span></td>
+              <td><strong>Gold:</strong> A resource exists in both temporal states, but its internal configuration or status values have been modified.[1]</td>
+            </tr>
+            <tr>
+              <td style="text-align: center; vertical-align: middle;"><span class="label" style="background-color: #c9190b; color: white; border-radius: 10px;">DEGRADED</span></td>
+              <td><strong>Red:</strong> A resource or check that previously reported a healthy state is now reporting a failure or error state.[1]</td>
+            </tr>
+            <tr>
+              <td style="text-align: center; vertical-align: middle;"><span class="label" style="background-color: #3e8635; color: white; border-radius: 10px;">RESOLVED</span></td>
+              <td><strong>Green:</strong> A resource or check that previously reported an error has been rectified in the newer temporal state.[1]</td>
+            </tr>
+            <tr>
+              <td style="text-align: center; vertical-align: middle;"><span class="label" style="background-color: #0066cc; color: white; border-radius: 10px;">NEW</span></td>
+              <td><strong>Blue:</strong> A completely new resource (e.g., a newly deployed pod or check) is present in the newer state but was absent in the older state.[1]</td>
+            </tr>
+            <tr>
+              <td style="text-align: center; vertical-align: middle;"><span class="label" style="background-color: #8a8d90; color: white; text-decoration: line-through; border-radius: 10px;">REMOVED</span></td>
+              <td><strong>Gray:</strong> A resource that was present in the older state has been deleted or terminated in the newer state.[1]</td>
+            </tr>
+          </tbody>
+        </table>
+
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>

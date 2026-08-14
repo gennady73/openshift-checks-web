@@ -1,125 +1,105 @@
 // ****************************
 //  scripts for the diff pages
 // ****************************
+var $clusterSelect = null;
+var $resultsSelect = null;
+var $compareFromSelect = null;
+var $compareToSelect = null;
 
-//function calcTimeRange(timeRangeValue, timeRangeDescription) {
-//    let selectedRange = timeRangeValue; //$(this).val();
-//
-//    // Default bounds (negative infinity to positive infinity)
-//    let fromDate = null;
-//    let toDate = moment(); // "Now" is always the upper bound for a relative range
-//
-//    if (selectedRange!== 'none') {
-//      // Split the value (e.g., "15-minutes") into amount and unit
-//      let parts = selectedRange.split('-');
-//      let amount = parseInt(parts, 10);
-//      let unit = parts[1];
-//
-//      // Calculate the exact 'From' time using moment.js
-//      fromDate = moment().subtract(amount, unit);
-//    }
-//
-//    // Pass fromDate and toDate to your existing options filtering algorithm here
-//      console.debug("timeRangeDescription: ", timeRangeDescription);
-//      console.debug("fromDate: ", fromDate);
-//      console.debug("toDate: ", toDate);
-//    // filterArtifactOptions(fromDate, toDate);
-//}
+var $compareFromSelectList = [];
 
-//function calcTimeRange(timeRangeValue, timeRangeDescription) {
-//    let selectedRange = timeRangeValue;
-//
-//    // Default bounds
-//    let fromDate = null;
-//    let toDate = moment();
-//
-//    if (selectedRange!== 'none') {
-//      let parts = selectedRange.split('-');
-//      let amount = parseInt(parts, 10);
-//      let unit = parts[1];
-//      fromDate = moment().subtract(amount, unit);
-//    }
-//
-//    // Format dates for the server payload (ISO 8601 string is standard)
-//    let payload = {
-//        start_date: fromDate? fromDate.format() : null,
-//        end_date: toDate.format()
-//    };
-//
-//    // Trigger the AJAX request to your Flask backend
-//    $.ajax({
-//        url: '/api/get-artifacts', // Replace with your actual Flask route
-//        type: 'GET',
-//        data: payload,
-//        dataType: 'json',
-//        success: function(response) {
-//            let $compareFrom = $('#compareFromSelect'); // Replace with your actual select ID
-//            let $compareTo = $('#compareToSelect');     // Replace with your actual select ID
-//
-//            // 1. Clear the existing options
-//            $compareFrom.empty();
-//            $compareTo.empty();
-//
-//            // 2. Iterate through the returned JSON and build new options
-//            $.each(response.data, function(index, artifact) {
-//                // Assuming 'artifact' contains the filename like '20260326-101026-6-openobserve.json'
-//                let optionHTML = $('<option></option>').val(artifact.filename).text(artifact.filename);
-//
-//                $compareFrom.append(optionHTML.clone());
-//                $compareTo.append(optionHTML.clone());
-//            });
-//
-//            // 3. Command bootstrap-select to rebuild the UI with the new DOM elements
-//            $compareFrom.selectpicker('refresh');
-//            $compareTo.selectpicker('refresh');
-//        },
-//        error: function(xhr, status, error) {
-//            console.error("Failed to fetch artifacts: ", error);
-//            // Optionally trigger a PatternFly Toast notification here
-//        }
-//    });
-//}
+async function buildTimeRangeList(srcDateTimeList, splitDateTime, splitBefore=true) {
 
-function calcTimeRange(timeRangeValue, timeRangeDescription) {
+    if(!srcDateTimeList || !splitDateTime || splitDateTime.trim == '') {
+        return [];
+    }
+
+    console.log('Build TimeRange List (split)  : ', splitDateTime);
+
+    //return srcDateTimeList.filter(item => item.filename > splitDateTime);
+
+    const index = srcDateTimeList.findIndex(item => item.filename == splitDateTime);
+
+    if (index == -1) {
+        return [];
+    }
+
+    const isSplitBefore = (splitBefore === true || splitBefore === false )? splitBefore : true;
+
+    if (isSplitBefore === true) {
+        const before = srcDateTimeList.slice(0, index);
+        console.log('Build TimeRange List (before) : ', before);
+        return before;
+    }
+    else {
+        const after = srcDateTimeList.slice(index);
+        console.log('Build TimeRange List (after)  : ', after);
+        return after;
+    }
+    return [];
+}
+
+async function calcTimeRange(timeRangeValue, timeRangeDescription) {
     let selectedRange = timeRangeValue;
+    const clusterId = $('#cluster-select option:selected').val();
+
+    if (clusterId === undefined  || clusterId == ''){
+        $('#loading-icon').hide();
+        $('#submit-btn').prop('disabled', false);
+        $('#notification').text('');
+        warnMessage('warning','No cluster selected');
+        for (var i = 0; i < 3; i++) { // flash 3 times - refactor it
+            $('#project-location div > button > div.filter-option').fadeOut(250).fadeIn(750);
+        }
+        return false;
+    }
 
     // Default bounds
     let fromDate = null;
     let toDate = moment();
 
     // Calculate the 'From' boundary if a specific relative time is chosen
-    if (selectedRange!== 'none' && selectedRange!== 'Priority') {
+    if (selectedRange && selectedRange != '') {
         let parts = selectedRange.split('-');
         let amount = parseInt(parts, 10);
         let unit = parts[1];
         fromDate = moment().subtract(amount, unit);
     }
+    else {
+        console.error('The selected Time Range is not valid: %s', selectedRange);
+        $('#loading-icon').hide();
+        $('#submit-btn').prop('disabled', false);
+        $('#notification').text('');
+        warnMessage('warning',`The selected Time Range is not valid: ${selectedRange}.`);
+        return false;
+    }
 
     // Format dates to strictly match the Python strptime format (YYYYMMDD-HHMMSS)
     // Send an empty string if fromDate is null (meaning "All Time")
     let payload = {
+        cluster_id: clusterId,
         start_date: fromDate? fromDate.format('YYYYMMDD-HHmmss') : '',
         end_date: toDate.format('YYYYMMDD-HHmmss')
     };
 
-    // Execute the AJAX call to the Flask endpoint
-    $.ajax({
+    rc = await $.ajax({
         url: '/diff/data/list/from', // Ensure this matches your unified Python route
         type: 'GET',
         data: payload,
         dataType: 'json',
-        success: function(response) {
-            let $compareFromSelect = $('#check-results-from-select');
-            let $compareToSelect = $('#check-results-to-select');
+        success: function(data) {
+//            $compareFromSelect = $('#check-results-from-select');
+//            $compareToSelect = $('#check-results-to-select');
 
             // Empty the native select dropdowns
             $compareFromSelect.empty();
             $compareToSelect.empty();
 
             // Iterate over the returned JSON objects
-            $.each(response, function(index, artifact) {
-                // Strip '.json' from the display name to match your Image 3 UI
-                let displayName = artifact.filename.replace('.json', '');
+            $.each(data, function(index, artifact) {
+                // Strip '.json' from the display name to match timestamp
+                let dateStr = artifact.filename.replace('.json', '').replace(`-${clusterId}`, '');
+                let displayName = moment(dateStr, "YYYYMMDD-HHmmss").format('YYYY-MM-DD HH:mm:ss');
 
                 // The value must remain the full filename so the backend can locate it later
                 let optionHTML = $('<option></option>').val(artifact.filename);
@@ -142,14 +122,56 @@ function calcTimeRange(timeRangeValue, timeRangeDescription) {
             // Command bootstrap-select to rebuild the visual UI
             $compareFromSelect.selectpicker('refresh');
             $compareToSelect.selectpicker('refresh');
+            return true;
         },
         error: function(xhr, status, error) {
             console.error("Failed to fetch filtered artifacts: ", error);
-            // Optional: You could trigger a PatternFly Toast here to notify the user of a network error
+            warnMessage("danger", `Failed to fetch filtered artifacts. ${error}`);
+            return false;
         }
     });
+
+    return rc;
 }
 
+function buildCombo(data, $selecElementRef, clusterId) {
+//            $compareFromSelect = $('#check-results-from-select');
+//            $compareToSelect = $('#check-results-to-select');
+
+            if (!data || !$selecElementRef || !clusterId) {
+                console.log('One or more arguments are missing to build a combobox.');
+                return;
+            }
+
+            // Empty the native select dropdowns
+            $selecElementRef.empty();
+
+            // Iterate over the returned JSON objects
+            $.each(data, function(index, artifact) {
+                // Strip '.json' from the display name to match timestamp
+                let dateStr = artifact.filename.replace('.json', '').replace(`-${clusterId}`, '');
+                let displayName = moment(dateStr, "YYYYMMDD-HHmmss").format('YYYY-MM-DD HH:mm:ss');
+
+                // The value must remain the full filename so the backend can locate it later
+                let optionHTML = $('<option></option>').val(artifact.filename);
+
+                if (artifact.is_baseline) {
+                    // Apply your requested styling to the data-content attribute
+                    let customHtml = displayName + ' <span style="color: #f0ab00;">&#9733; baseline</span>';
+                    optionHTML.attr('data-content', customHtml);
+                    // Fallback text
+                    optionHTML.text(displayName + ' (baseline)');
+                } else {
+                    optionHTML.attr('data-content', displayName);
+                    optionHTML.text(displayName);
+                }
+
+                $selecElementRef.append(optionHTML.clone());
+            });
+
+            // Command bootstrap-select to rebuild the visual UI
+            $selecElementRef.selectpicker('refresh');
+        }
 
 // 4. Visual Decoration Logic
 function renderDiffTable(data) {
@@ -205,166 +227,212 @@ function renderDiffTable(data) {
     });
 }
 
-$(document).ready(function() {
+// 4. Core AJAX Rendering Logic
+function fetchAndRenderResults(clusterId, preselectResult) {
 
-    // Initialize the selectpicker
-    $('.selectpicker').selectpicker();
-    let $compareFromSelect = $('#check-results-from-select');
-    let $compareToSelect = $('#check-results-to-select');
-//    $compareFromSelect.empty();
-//    $compareToSelect.empty();
-    // Command bootstrap-select to rebuild the visual UI
-    $compareFromSelect.selectpicker('refresh');
-    $compareToSelect.selectpicker('refresh');
+    clearAllTables();
 
-    var sourceUrl = `/diff/${jsonDiffFile}`;
+    $.ajax({
+        url: AppConfig.urls.diff.listData,
+        type: 'GET',
+        data: { cluster_id: clusterId },
+        dataType: 'json',
+        success: function(data) {
 
-    if (jsonDiffFile && jsonDiffFile != '') {
-        $.getJSON(sourceUrl, function(data) {
-            window.reportData = data;
-            renderDiffTable(data);
-        });
-    }
+            $resultsSelect.empty(); // Clear old options
 
-    // Initialize Bootstrap tooltips
-    $('[data-toggle="tooltip"]').tooltip();
-
-    $('#submit-diff-btn').off('click').on('click', function () {
-        const clusterId = $('#cluster-select option:selected').val();
-        const clusterName = $('#cluster-select option:selected').text().trim();
-        const checkResultsFrom = $('#check-results-from-select').val();
-        const checkResultsTo = $('#check-results-to-select').val();
-        const selectedDiff = $('#jsons').text();
-
-        $.ajax({
-            url: '/diff/async-task',
-            method: 'POST',
-            contentType: 'application/json',
-            data: JSON.stringify({
-                cluster_id: clusterId,
-                cluster_name: clusterName,
-                check_results_from: checkResultsFrom,
-                check_results_to: checkResultsTo,
-                selected_diff_result: selectedDiff,
-            }),
-            beforeSend: function () {
-                if (clusterId === undefined  || clusterId == ''){
-                    $('#loading-icon').hide();
-                    $('#submit-btn').prop('disabled', false);
-                    $('#notification').text('');
-                    warnMessage('warning','No cluster selected');
-                    for (var i = 0; i < 3; i++) { // flash 3 times - refactor it
-                        $('#cluster-select').fadeOut(250).fadeIn(1450);
-                    }
-                    return false;
-                }
-                $('#loading-icon').show();
-                $('#submit-btn').prop('disabled', true);
-            },
-            success: function (resp) {
-                console.info("Cluster compare check results success: ", clusterName);
-                jsonFilesList = resp.json_diff_list;
-                jsonDiffFile = resp.json_diff_file;
-                jsonFile = resp.json_diff_file;
-
-                //$('#diff-tab-nav').html(resp.diff_tab_nav);
-                $('#result-container').html(resp.result_container);
-                $('#notification').html(resp.notification);
-
-                checkForFile(jsonDiffFile);
-                /*  diff-result */
-                if (resp.data) {
-                    window.reportData = resp.data;
-                    setTimeout(function() {
-                        buildPage(window.reportData);
-                        renderDiffTable(window.reportData);
-                    }, 125);
-                }
-            },
-            error: function (xhr, status, err) {
-                console.error("AJAX error:", err);
-                alert("AJAX error: " + err);
-            },
-            complete: function () {
-                $('#loading-icon').hide();
-                $('#submit-diff-btn').prop('disabled', false);
+            if (!data || data.length === 0) {
+                $resultsSelect.empty().selectpicker('refresh');
+                $compareFromSelectList = [];
+                return true;
             }
-        });
-    });
 
-//    // 4. Visual Decoration Logic
-//    function renderDiffTable(data) {
-//        var dataResults = data.results || {};
-//
-//        $.each(dataResults, function(hashId, item) {
-//            if (item.state_change && item.state_change!== 'unchanged') {
-//
-//                // Safely scope the find specifically to the report body
-//                var $changedItem = $('#report_table_risu_body').find('#plugin-' + hashId);
-//
-//                if ($changedItem.length > 0) {
-//                    var badgeHtml = `<span class="diff-badge badge-${item.state_change}">${item.state_change.toUpperCase()}</span>`;
-//
-//                    $changedItem.addClass(`row-${item.state_change}`);
-//
-//                    // Only append the badge if it doesn't already exist to prevent duplicates on double-clicks
-//                    if ($changedItem.find('.diff-badge').length === 0) {
-//                        $changedItem.find('.list-group-item-heading').append(badgeHtml);
-//                    }
-//
-//                    // Explicitly force the row open on load
-//                    $changedItem.addClass("list-view-pf-expand-active");
-//                    $changedItem.find(".list-group-item-container").removeClass("hidden").css("display", "block");
-//
-//                    // Explicitly force the down arrow
-//                    $changedItem.find('.list-view-pf-expand span.fa').removeClass('fa-angle-right').addClass('fa-angle-down');
-//                }
-//            }
-//        });
-//    }
+            // Build the dropdown options dynamically
+            $.each(data, function(index, artifact) {
+                let diffDates = artifact.filename.replace('_diff.json', '').replaceAll(`-${clusterId}`, '').split('_to_');
+                let dateStrFrom = moment(diffDates[0], "YYYYMMDD-HHmmss").format('YYYY-MM-DD HH:mm:ss');
+                let dateStrTo = moment(diffDates[1], "YYYYMMDD-HHmmss").format('YYYY-MM-DD HH:mm:ss');
+                let displayName = dateStrFrom + ' <b>&#9205;&#9205;</b> ' + dateStrTo;
+                let $option = $('<option></option>').val(artifact.filename);
 
-    // ========================================================================
-    // 5. EVENT DELEGATION: Explicit State Machine
-    // ========================================================================
-    var $resultContainer = $('#result-container');
+                if (artifact.is_baseline) {
+                    let customHtml = displayName + ' <span style="color: #f0ab00;"><b>&#9733; baseline</b></span>';
+                    $option.attr('data-content', customHtml);
+                    $option.text(displayName + ' (baseline)');
+                } else {
+                    $option.attr('data-content', displayName);
+                    $option.text(displayName);
+                }
 
-    $resultContainer.off('click', '.list-group-item-header').on('click', '.list-group-item-header', function(e) {
-        e.stopPropagation();
-        e.preventDefault();
+                $resultsSelect.append($option);
+            });
 
-        var $item = $(this).closest('.list-group-item');
-        var $container = $item.find('.list-group-item-container');
-        var $icon = $(this).find('.list-view-pf-expand span.fa');
+            // Re-enable combo and apply the session-saved value if it exists
+            $resultsSelect.prop('disabled', false);
+            if (preselectResult) {
+                // the only working combination.- following two rows together.
+                $resultsSelect.val(preselectResult).selectpicker('refresh');
+                $resultsSelect.selectpicker('val', preselectResult);
+            }
 
-        // EXPLICIT STATE CHECK: Determines exactly what to do instead of toggling blindly
-        var isExpanded = $item.hasClass('list-view-pf-expand-active');
+            console.log("Pre-select Result: ", preselectResult);
 
-        if (isExpanded) {
-            // Row is OPEN. We need to CLOSE it.
-            $item.removeClass('list-view-pf-expand-active');
-            $icon.removeClass('fa-angle-down').addClass('fa-angle-right'); // Force right arrow
-            $container.stop(true, true).slideUp(200);
-        } else {
-            // Row is CLOSED. We need to OPEN it.
-            $item.addClass('list-view-pf-expand-active');
-            $icon.removeClass('fa-angle-right').addClass('fa-angle-down'); // Force down arrow
-            $container.removeClass('hidden').stop(true, true).slideDown(200);
+            // Force bootstrap-select to rebuild the UI
+            $resultsSelect.selectpicker('refresh');
+        },
+        error: function(xhr, status, error) {
+            console.error("Failed to load results for cluster: ", error);
+            $resultsSelect.empty().selectpicker('refresh');
         }
     });
 
-    $resultContainer.off('click', '.close').on('click', '.close', function(e) {
-        e.stopPropagation();
-        e.preventDefault();
+    // reload the time-range combos "From" "To"
+    // Format dates to strictly match the Python strptime format (YYYYMMDD-HHMMSS)
+    // Send an empty string if fromDate is null (meaning "All Time")
+    let payload = {
+        cluster_id: clusterId,
+        start_date: '',
+        end_date: '',
+    };
 
-        var $item = $(this).closest('.list-group-item');
-        var $container = $item.find('.list-group-item-container');
-        var $icon = $item.find('.list-view-pf-expand span.fa');
+    $.ajax({
+        url: '/diff/data/list/from', // Ensure this matches your unified Python route
+        type: 'GET',
+        data: payload,
+        dataType: 'json',
+        success: function(data) {
+            $compareFromSelect = $('#check-results-from-select');
+            $compareToSelect = $('#check-results-to-select');
 
-        // Explicitly close and force right arrow
-        $item.removeClass('list-view-pf-expand-active');
-        $icon.removeClass('fa-angle-down').addClass('fa-angle-right');
-        $container.stop(true, true).slideUp(200);
+            // Empty the native select dropdowns
+            $compareFromSelect.empty();
+            $compareToSelect.empty();
+            $compareFromSelectList = JSON.parse(JSON.stringify(data));
+
+            // Iterate over the returned JSON objects
+            $.each(data, function(index, artifact) {
+                // Strip '.json' from the display name to match timestamp
+                let dateStr = artifact.filename.replace('.json', '').replace(`-${clusterId}`, '');
+                let displayName = moment(dateStr, "YYYYMMDD-HHmmss").format('YYYY-MM-DD HH:mm:ss');
+
+                // The value must remain the full filename so the backend can locate it later
+                let optionHTML = $('<option></option>').val(artifact.filename);
+
+                if (artifact.is_baseline) {
+                    // Apply your requested styling to the data-content attribute
+                    let customHtml = displayName + ' <span style="color: #f0ab00;">&#9733; baseline</span>';
+                    optionHTML.attr('data-content', customHtml);
+                    // Fallback text
+                    optionHTML.text(displayName + ' (baseline)');
+                } else {
+                    optionHTML.attr('data-content', displayName);
+                    optionHTML.text(displayName);
+                }
+
+                $compareFromSelect.append(optionHTML.clone());
+                $compareToSelect.append(optionHTML.clone());
+            });
+
+            // Command bootstrap-select to rebuild the visual UI
+
+            // the only working combination.- following two rows together.
+            $compareFromSelect.val(AppConfig.state.diff.resultFrom).selectpicker('refresh');
+            $compareFromSelect.selectpicker('val', AppConfig.state.diff.resultFrom);
+
+            // the only working combination.- following two rows together.
+            $compareToSelect.val(AppConfig.state.diff.resultTo).selectpicker('refresh');
+            $compareToSelect.selectpicker('val', AppConfig.state.diff.resultTo);
+        },
+        error: function(xhr, status, error) {
+            console.error("Failed to fetch filtered artifacts: ", error);
+            // Optional: You could trigger a PatternFly Toast here to notify the user of a network error
+        }
     });
+
+}
+
+function setEmptyState() {
+    // Ensures the dropdown says "Select check result" and cannot be opened
+    $resultsSelect.empty().prop('disabled', true).selectpicker('refresh');
+
+    // hide/empty Metadata and Report tables here:
+    clearAllTables();
+}
+
+function loadReportTables(selectedValue) {
+    console.log('Selected Value:', selectedValue);
+    var reqUrl = `${[location.protocol, "//", location.host, location.pathname].join("")}${selectedValue}`;
+    // Here we load the data from risu.json with ajax and we populate the webpage
+    $.ajax({
+      url: reqUrl,
+      dataType: "json",
+      beforeSend: function () {
+        if (!selectedValue || selectedValue == '') return false; //cancel request
+        $("#report_table_risu_body").append(
+          '<tr id="loading"><td>Loading ' +
+            selectedValue +
+            '... <span class="fa fa-refresh"/></td></tr>'
+        );
+      },
+      success: function(data) {
+        buildPage(data); renderDiffTable(data);
+      }, // ajax success
+      error: function (jqXHR, exception) {
+        console.log(jqXHR);
+        if (jqXHR.status === 0) {
+          warnMessage("danger", "Unable to get JSON file. [0]");
+        } else if (jqXHR.status == 404) {
+          warnMessage("danger", `Requested JSON file '${selectedValue}' was not found.`);
+        } else if (jqXHR.status == 500) {
+          warnMessage("danger", "Internal Server Error [500].");
+        } else if (exception === "parsererror") {
+          warnMessage("danger", "Requested JSON parse failed.");
+        } else if (exception === "timeout") {
+          warnMessage("danger", "Time out error.");
+        } else if (exception === "abort") {
+          warnMessage("danger", "Ajax request aborted.");
+        } else {
+          warnMessage("danger", "Uncaught Error.\n" + jqXHR.responseText);
+        }
+      },
+      complete: function () {
+        var $loadingRow = $("#report_table_risu_body tr#loading");
+        $loadingRow.remove(); // Clean up UI regardless of success/error
+      }, // ajax complete
+    }); // ajax query
+}
+
+$(document).ready(function() {
+    // Initialize Bootstrap tooltips
+    $('[data-toggle="tooltip"]').tooltip();
+
+    // Initialize the selectpicker
+    $('.selectpicker').selectpicker();
+
+    // 1. Read Configuration & Session State securely from the DOM
+    AppConfig.urls.diff.listData = $('#app-context').data('api-list');
+    AppConfig.state.cluster = $('#app-context').data('active-cluster');
+    AppConfig.state.result = $('#app-context').data('active-result');
+    AppConfig.state.diff.result = $('#app-context').data('diff-active-result')
+    AppConfig.state.diff.resultFrom = $('#app-context').data('diff-active-result-from')
+    AppConfig.state.diff.resultTo = $('#app-context').data('diff-active-result-to')
+
+    $clusterSelect = $('#cluster-select');
+    $resultsSelect = $('#otherJsons');
+    $compareFromSelect = $('#check-results-from-select');
+    $compareToSelect = $('#check-results-to-select');
+
+    // 2. Initial Application Load: Sync UI with Backend Session
+    if (AppConfig.state.cluster) {
+        // Forces the cluster combo to show the active session cluster
+        $clusterSelect.val(AppConfig.state.cluster).selectpicker('refresh');
+        fetchAndRenderResults(AppConfig.state.cluster, AppConfig.state.diff.result);
+    } else {
+        // Enforce the completely empty default state
+        setEmptyState();
+    }
+
+    // 3. Bind Event Listeners
 
     // ========================================================================
     // Table Header Expand/Collapse (Metadata, Profiles, Report)
@@ -378,75 +446,13 @@ $(document).ready(function() {
     $("body").on("click", "#report_table_risu_header", function (e) {
       $("#report_table_risu_body").toggle();
     });
-//    $("body").on('click', 'tr[id$="_header"]', function(e) {
-//        e.preventDefault();
-//
-//        // 1. Get the ID of the clicked header (e.g., "metadata_table_risu_header")
-//        var headerId = $(this).attr('id');
-//
-//        // 2. Dynamically construct the ID of the corresponding body
-//        var bodyId = headerId.replace('_header', '_body');
-//        var $body = $('#' + bodyId);
-//
-//        // 3. Toggle the visibility.
-//        // Note: We use.toggle() instead of.slideToggle() because animating
-//        // a <tbody> element's height often breaks table rendering in web browsers.
-//        // $body.toggle(); - does not work instantly.
-//        if($body.is(':visible') == true){
-//            $body.hide();
-//        }
-//        else {
-//            $body.show();
-//        }
-//    });
-
-    // ========================================================================
-    // 6. GLOBAL EXPAND/COLLAPSE ALL FIX
-    // Replaces the default blind toggle with an explicit state machine
-    // ========================================================================
-    $(document).off('click', '#expandAll').on('click', '#expandAll', function(e) {
-        // Prevent the original Risu script in diff-result.html from firing
-        e.preventDefault();
-        e.stopImmediatePropagation();
-
-        var $btn = $(this);
-        var isExpanding = $btn.text().trim() === 'Expand All';
-        var $allRows = $('#report_table_risu_body .list-group');
-
-        if (isExpanding) {
-            // Intention: EXPAND. Find ONLY the rows that are currently closed.
-            var $closedRows = $allRows.not('.list-view-pf-expand-active');
-
-            $closedRows.addClass('list-view-pf-expand-active');
-            $closedRows.find('.list-view-pf-expand span.fa').removeClass('fa-angle-right').addClass('fa-angle-down');
-            $closedRows.find('.list-group-item-container').removeClass('hidden').stop(true, true).slideDown(200);
-
-            // Update the button text for the next click
-            $btn.text('Collapse All');
-        } else {
-            // Intention: COLLAPSE. Find ONLY the rows that are currently open.
-            var $openRows = $allRows.filter('.list-view-pf-expand-active');
-
-            $openRows.removeClass('list-view-pf-expand-active');
-            $openRows.find('.list-view-pf-expand span.fa').removeClass('fa-angle-down').addClass('fa-angle-right');
-            $openRows.find('.list-group-item-container').stop(true, true).slideUp(200);
-
-            // Update the button text for the next click
-            $btn.text('Expand All');
-        }
-    });
 
     // listener to trigger the Monaco Editor
     // Attach to the document so it survives AJAX reloads
-    $(document).off('click', '.btn-view-diff').on('click', '.btn-view-diff', function(e) {
+    $(document).on('click', '.btn-view-diff', function(e) {
         e.preventDefault();
         var oldText = $(this).data('old-text');
         var newText = $(this).data('new-text');
-
-        //require.config({
-        //    baseUrl: 'http://localhost:5500/occode/static/vendor',
-        //    paths: {'vs': 'monaco-editor/min/vs'}
-        //});
 
         $('#monacoDiffModal').modal('show');
 
@@ -470,18 +476,208 @@ $(document).ready(function() {
         }, 250);
     });
 
-
-    $("body").on("click", ".relative-time-field", function (e) {
+//    $("#relativeTimeFilter").on("change", function (e) {
+//        var timeRangeField = $(this);
+//        
+//        var timeRangeValue = timeRangeField.data('rtfield');// timeRangeField.html();
+//        var timeRangeDescription = timeRangeField.text(); //timeRangeValue.toLowerCase();
+//        var sortbutton = $(this).parent().parent().parent().find("button");
+//        timeRangeField.parent().parent().find("li").removeClass("selected");
+//        timeRangeField.parent().addClass("selected");
+//        sortbutton.html(timeRangeDescription + ' <span class="caret"></span>');
+//        sortbutton.data("rtfield", timeRangeValue);
+//        calcTimeRange(timeRangeValue, timeRangeDescription);
+//    });
+    $("#relativeTimeFilter").on("change", function (e) {
         var timeRangeField = $(this);
-        debugger;
-        var timeRangeValue = timeRangeField.data('rtfield');// timeRangeField.html();
-        var timeRangeDescription = timeRangeField.text(); //timeRangeValue.toLowerCase();
-        var sortbutton = $(this).parent().parent().parent().find("button");
-        timeRangeField.parent().parent().find("li").removeClass("selected");
-        timeRangeField.parent().addClass("selected");
-        sortbutton.html(timeRangeDescription + ' <span class="caret"></span>');
-        sortbutton.data("rtfield", timeRangeValue);
-        calcTimeRange(timeRangeValue, timeRangeDescription);
+        
+        var timeRangeValue = timeRangeField.val()
+        var timeRangeDescription = timeRangeField.find("option:selected").text();
+        let rc = false;
+        calcTimeRange(timeRangeValue, timeRangeDescription).then((val)=>{
+            rc = val;
+            console.log(`val=${rc}`);
+        });
+        return rc;
+    });
+
+    $clusterSelect.on('change', function() {
+        let newCluster = $(this).val();
+        AppConfig.state.cluster = newCluster;
+        console.log('*** CLUSTER CHANGED : %s', newCluster);
+
+        if (newCluster) {
+            AppConfig.state.result = null; // Reset the result when switching clusters
+            AppConfig.state.diff.result = null; // Reset the result when switching clusters
+            AppConfig.state.diff.resultFrom = null; // Reset the result when switching clusters
+            AppConfig.state.diff.resultTo = null; // Reset the result when switching clusters
+            fetchAndRenderResults(newCluster, '');
+        } else {
+            setEmptyState();
+        }
+    });
+
+    $compareFromSelect.on('change', function() {
+        let selectedResult = $(this).val();
+        console.log("CompareFrom selected : ", selectedResult);
+        if(selectedResult) {
+            AppConfig.state.diff.resultFrom = selectedResult;
+            buildTimeRangeList($compareFromSelectList, selectedResult)
+                .then(result  => {
+                console.log("compareToList : ", result);
+                buildCombo(result, $compareToSelect, AppConfig.state.cluster);
+                $compareToSelect.val(AppConfig.state.diff.resultTo).selectpicker('refresh');
+            });
+        }
+    });
+
+    $compareToSelect.on('change', function() {
+        let selectedResult = $(this).val();
+        console.log("CompareTo selected   : ", selectedResult);
+        if(selectedResult) {
+            AppConfig.state.diff.resultTo = selectedResult;
+        }
+    });
+
+    $resultsSelect.on('change', function() {
+        let selectedResult = $(this).val();
+
+        if(selectedResult === undefined || selectedResult == null || selectedResult.trim() == '') {
+            return false;
+        }
+
+        AppConfig.state.diff.result = selectedResult;
+
+        // reverse check result files from diff result filename
+        let clusterId = AppConfig.state.cluster;
+        let diffDates = selectedResult.replace('_diff.json', '').replaceAll(`-${clusterId}`, '').split('_to_');
+
+        let dateStrFrom = `${diffDates[0]}-${clusterId}.json`;
+        AppConfig.state.diff.resultFrom = dateStrFrom;
+        $compareFromSelect.val(AppConfig.state.diff.resultFrom).selectpicker('refresh');
+        $compareFromSelect.selectpicker('val', AppConfig.state.diff.resultFrom);
+
+        let dateStrTo = `${diffDates[1]}-${clusterId}.json`;
+        AppConfig.state.diff.resultTo = dateStrTo;
+        $compareToSelect.val(AppConfig.state.diff.resultTo).selectpicker('refresh');
+        $compareToSelect.selectpicker('val', AppConfig.state.diff.resultTo);
+
+
+//        const clusterId = $('#cluster-select option:selected').val();
+        const clusterName = $('#cluster-select option:selected').text().trim();
+        const checkResultsFrom = $('#check-results-from-select').val();
+        const checkResultsTo = $('#check-results-to-select').val();
+
+        $.ajax({
+            url: '/diff/data/state',
+            method: 'PUT',
+            contentType: 'application/json',
+            data: JSON.stringify({
+                cluster_id: clusterId,
+                cluster_name: clusterName,
+                check_results_from: checkResultsFrom,
+                check_results_to: checkResultsTo,
+                selected_diff_result: selectedResult,
+            }),
+            beforeSend: function () {
+                if (clusterId === undefined  || clusterId == ''){
+                    $('#loading-icon').hide();
+                    $('#submit-btn').prop('disabled', false);
+                    $('#notification').text('');
+                    warnMessage('warning','No cluster selected');
+                    for (var i = 0; i < 3; i++) { // flash 3 times - refactor it
+                        $('#project-location div > button > div.filter-option').fadeOut(250).fadeIn(750);
+                    }
+                    return false;
+                }
+                $('#loading-icon').show();
+                $('#submit-btn').prop('disabled', true);
+            },
+            success: function (resp) {
+//                $('#notification').html(resp.notification);
+//                $resultsSelect.val(resp.json_diff_file).selectpicker('refresh'); // jsonFile
+//                selectedResult = $resultsSelect.val();
+//                if(!selectedResult || selectedResult != resp.json_diff_file) {
+//                    selectedResult = resp.json_diff_file;
+//                }
+//                AppConfig.state.diff.result = selectedResult;
+//                window.reportData = resp.data;
+//                jsonFilesList = resp.json_diff_list;
+//                jsonDiffFile = resp.json_diff_file;
+//                console.info("Cluster compare check results success: %s", clusterName);
+//                fetchAndRenderResults(AppConfig.state.cluster, AppConfig.state.diff.result);
+//                loadReportTables(selectedResult);
+            },
+            error: function (xhr, status, err) {
+                console.error("AJAX error:", err);
+                alert("AJAX error: " + err);
+            },
+            complete: function () {
+                $('#loading-icon').hide();
+                $('#submit-diff-btn').prop('disabled', false);
+            }
+        });
+
+        loadReportTables(selectedResult);
+    });
+
+    $('#submit-diff-btn').on('click', function () {
+        const clusterId = $('#cluster-select option:selected').val();
+        const clusterName = $('#cluster-select option:selected').text().trim();
+        const checkResultsFrom = $('#check-results-from-select').val();
+        const checkResultsTo = $('#check-results-to-select').val();
+        let selectedResult = ''; // const selectedDiff = $('#jsons').text();
+
+        $.ajax({
+            url: '/diff/async-task',
+            method: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify({
+                cluster_id: clusterId,
+                cluster_name: clusterName,
+                check_results_from: checkResultsFrom,
+                check_results_to: checkResultsTo,
+                selected_diff_result: selectedResult,
+            }),
+            beforeSend: function () {
+                if (clusterId === undefined  || clusterId == ''){
+                    $('#loading-icon').hide();
+                    $('#submit-btn').prop('disabled', false);
+                    $('#notification').text('');
+                    warnMessage('warning','No cluster selected');
+                    for (var i = 0; i < 3; i++) { // flash 3 times - refactor it
+                        $('#project-location div > button > div.filter-option').fadeOut(250).fadeIn(750);
+                    }
+                    return false;
+                }
+                $('#loading-icon').show();
+                $('#submit-btn').prop('disabled', true);
+            },
+            success: function (resp) {
+                $('#notification').html(resp.notification);
+                $resultsSelect.val(resp.json_diff_file).selectpicker('refresh'); // jsonFile
+                selectedResult = $resultsSelect.val();
+                if(!selectedResult || selectedResult != resp.json_diff_file) {
+                    selectedResult = resp.json_diff_file;
+                }
+                AppConfig.state.diff.result = selectedResult;
+                window.reportData = resp.data;
+                jsonFilesList = resp.json_diff_list;
+                jsonDiffFile = resp.json_diff_file;
+                console.info("Cluster compare check results success: %s", clusterName);
+                fetchAndRenderResults(AppConfig.state.cluster, AppConfig.state.diff.result);
+                loadReportTables(selectedResult);
+            },
+            error: function (xhr, status, err) {
+                console.error("AJAX error:", err);
+                alert("AJAX error: " + err);
+            },
+            complete: function () {
+                $('#loading-icon').hide();
+                $('#submit-diff-btn').prop('disabled', false);
+            }
+        });
+
     });
 
 });

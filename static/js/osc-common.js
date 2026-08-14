@@ -11,23 +11,43 @@ var ft_min_char = 3;
 // List of json files we're looking
 var jsonFilesList = []; //["osc.json", "risu.json", "magui.json", "citellus.json"];
 
-// fill the list
+// 1. Read Configuration & Session State securely from the DOM
+const AppConfig = {
+    urls: {
+        listData: $('#app-context').data('api-list'),
+        diff: {
+          listData: $('#app-context').data('diff-api-list'),
+        }
+    },
+    state: {
+        cluster: $('#app-context').data('active-cluster'),
+        result: $('#app-context').data('active-result'),
+        diff: {
+          resultFrom: $('#app-context').data('diff-active-result-from'),
+          resultTo: $('#app-context').data('diff-active-result-to'),
+          result: $('#app-context').data('diff-active-result'),
+        },
+    }
+};
 
-$.ajax({
-  url: `${[location.protocol, "//", location.host, location.pathname].join("")}data/list`, // "/diff/data/list",
-  type: "GET",
-  async: false,
-  beforeSend: function () {
-    return (!$('#home-settings-tab.active') || $('#home-settings-tab.active').length == 0)? true : false;
-  },
-  success: function(response) {
-    jsonFilesList = response;
-    console.debug("jsonFilesList = ", jsonFilesList);
-  },
-  error: function(xhr) {
-    console.error("Error fetching data");
-  }
-});
+
+//// fill the list
+//
+//$.ajax({
+//  url: `${[location.protocol, "//", location.host, location.pathname].join("")}data/list`, // "/diff/data/list",
+//  type: "GET",
+//  async: false,
+//  beforeSend: function () {
+//    return (!$('#home-settings-tab.active') || $('#home-settings-tab.active').length == 0)? true : false;
+//  },
+//  success: function(response) {
+//    jsonFilesList = response;
+//    console.debug("jsonFilesList = ", jsonFilesList);
+//  },
+//  error: function(xhr) {
+//    console.error("Error fetching data");
+//  }
+//});
 
 
 var plugin_cats_array = new Array();
@@ -54,6 +74,14 @@ var jsonDiffFile = '';
 // Visual Decoration Logic
 function renderDiffTable(data) {
   // must be overrided, when need some additional rendering.
+}
+
+function renderToolbar(data) {
+  var div_otherJsons = $("#otherJsons");
+  div_otherJsons
+    .children("button")
+    .html(jsonFile + ' <span class="caret"></span>');
+  div_otherJsons.children("button").data("jsonFile", jsonFile);
 }
 
 // function to get query string
@@ -518,67 +546,7 @@ function printRisuPlugin(
   }
 }
 
-/**
- * Toggle mark of "check result" file as "baseline" for comparison.
- * @param {string} checkResultFile - afile name of "check result"
- */
-function toggleBaseline(checkResultFile) {
 
-  var div_otherJsons = $("#otherJsons");
-  const clusterId = $('#cluster-select option:selected').val();
-  const selectedCheckResultFile = $('#jsons').text();
-
-  return $.ajax({
-    url: '/baseline',
-    type: "POST",
-    dataType: "json",
-    async: false,
-    data: JSON.stringify({
-      cluster_id: clusterId,
-      selected_result: checkResultFile,
-    }),
-    beforeSend: function () {
-      if (clusterId === undefined  || clusterId == ''){
-          $('#loading-icon').hide();
-          $('#submit-btn').prop('disabled', false);
-          $('#notification').text('');
-          warnMessage('warning','No cluster selected');
-          for (var i = 0; i < 3; i++) { // flash 3 times - refactor it
-              $('#cluster-select').fadeOut(250).fadeIn(1450);
-          }
-          return false;
-      }
-
-      if(!selectedCheckResultFile && !checkResultFile) {
-        warnMessage('danger','No file selected.');
-        return false;
-      }
-      else if(selectedCheckResultFile && !checkResultFile) {
-        checkResultFile = selectedCheckResultFile;
-      }
-
-      $('#loading-icon').show();
-      $('#submit-btn').prop('disabled', true);
-
-      console.log("Toggle Baseline");
-    },
-    success: function (data) {
-      if (checkResultFile == jsonFile) {
-        div_otherJsons
-          .children("button")
-          .html(jsonFile + ' <span class="caret"></span><span>(Baseline)</span>');
-      }
-      div_otherJsons
-        .children("ul")
-        .append('<li><a href="#" class="json-files">' + f + "</a></li>");
-      div_otherJsons.removeClass("hidden");
-    },
-    error: function (xhr, status, err) {
-        console.error("AJAX error:", err);
-        warnMessage('danger','No file selected.', err);
-    },
-  });
-}
 
 const messageIconClasses = new Map([
   ["danger", "pficon pficon-error-circle-o"],
@@ -640,7 +608,6 @@ function ObjectLength(object) {
 
 function checkForFile(data) {
   var div_otherJsons = $("#otherJsons");
-  debugger;
   var f = data['filename']? data['filename'] : data; // jsonFilesList
   var isBaseline = (data['is_baseline'] && data['is_baseline'] == true)? true : false;
 
@@ -679,7 +646,7 @@ function checkForFile(data) {
 
 function checkForFileNew(data) {
   var $div_otherJsons = $("#otherJsons");
-  debugger;
+
 //  let $compareFromSelect = $('#check-results-from-select');
 //  let $compareToSelect = $('#check-results-to-select');
 
@@ -743,6 +710,13 @@ function scrollToPlugin() {
   }
 }
 
+// NEW - Delete content of tables: metadata profile report
+function clearAllTables() {
+  $('tbody#metadata_table_risu_body tr').empty();
+  $('tbody#profile_table_risu_body tr#profile-group').empty();
+  $('tbody#report_table_risu_body tr#list-group').empty();
+}
+
 // NEW - BUILD PAGE
 function buildPage(data) {
   var div_otherJsons = $("#otherJsons");
@@ -766,10 +740,11 @@ function buildPage(data) {
       document.title = "Report for " + item.split("/").pop();
     }
   });
-  div_otherJsons
-    .children("button")
-    .html(jsonFile + ' <span class="caret"></span>');
-  div_otherJsons.children("button").data("jsonFile", jsonFile);
+//  div_otherJsons
+//    .children("button")
+//    .html(jsonFile + ' <span class="caret"></span>');
+//  div_otherJsons.children("button").data("jsonFile", jsonFile);
+  renderToolbar();
   var dataNum = ObjectLength(data.results);
   var counter = 0;
   $.each(data.results, function (i, item) {
@@ -920,6 +895,38 @@ function buildPage(data) {
 }
 
 
+/* THEME SWITCH */
+function applyTheme(themeName) {
+    const themeLink = document.getElementById('theme-stylesheet');
+    const checkbox = document.getElementById('theme-toggle-checkbox');
+
+    if (themeLink) {
+        themeLink.href = `/static/css/theme-${themeName}.css`;
+    }
+
+    // Save preference to storage
+    localStorage.setItem('selected-theme', themeName);
+
+    // Keep the UI checkbox toggle state in sync
+    if (checkbox) {
+        checkbox.checked = (themeName === 'dark');
+    }
+}
+
+// Triggered whenever a user clicks the toggle slider
+function handleToggleClick() {
+    const checkbox = document.getElementById('theme-toggle-checkbox');
+    const nextTheme = checkbox.checked ? 'dark' : 'light';
+    applyTheme(nextTheme);
+}
+
+// Initialize theme checking as soon as DOM is ready
+document.addEventListener("DOMContentLoaded", () => {
+    const savedTheme = localStorage.getItem('selected-theme') || 'light';
+    applyTheme(savedTheme);
+});
+
+
 //  var jsonUrl =`${[location.protocol, "//", location.host, location.pathname].join("")}data/selected`;
 //
 //  $.ajax({
@@ -928,7 +935,7 @@ function buildPage(data) {
 //    dataType: "json",
 //    async: false,
 //    beforeSend: function() {
-//      debugger; // get jsonFile
+//      // get jsonFile
 //      return ($('#home-results-tab.active').length > 0)? true : false;
 //    },
 //    success: function(data) {
@@ -942,27 +949,32 @@ function buildPage(data) {
 
 
 // This code is only executed when everything else is loaded
+
 $(document).ready(function () {
 
-  var jsonUrl =`${[location.protocol, "//", location.host, location.pathname].join("")}data/selected`;
+//  var jsonUrl =`${[location.protocol, "//", location.host, location.pathname].join("")}data/selected`;
+//
+//  $.ajax({
+//    url: jsonUrl,
+//    type: "GET",
+//    dataType: "json",
+//    async: false,
+//    beforeSend: function() {
+//      // get jsonFile
+//      return ($('#home-results-tab.active').length > 0)? true : false;
+//    },
+//    success: function(data) {
+//        jsonFile = data;
+//        console.debug("selected json file ", jsonFile);
+//    },
+//    error: function(xhr) {
+//        console.error("Error fetching data");
+//    },
+//  });
 
-  $.ajax({
-    url: jsonUrl,
-    type: "GET",
-    dataType: "json",
-    async: false,
-    beforeSend: function() {
-      debugger; // get jsonFile
-      return ($('#home-results-tab.active').length > 0)? true : false;
-    },
-    success: function(data) {
-        jsonFile = data;
-        console.debug("selected json file ", jsonFile);
-    },
-    error: function(xhr) {
-        console.error("Error fetching data");
-    },
-  });
+  AppConfig.urls.listData = $('#app-context').data('api-list');
+  AppConfig.state.cluster = $('#app-context').data('active-cluster');
+  AppConfig.state.result = $('#app-context').data('active-result');
 
   // Initialize the selectpicker
   $('.selectpicker').selectpicker();
@@ -985,8 +997,7 @@ $(document).ready(function () {
    //*** checkForFile(jsonFilesList[i]);
   }
 
-  debugger;
-  checkForFileNew(jsonFilesList);
+  //checkForFileNew(jsonFilesList);
 
 
   // Chrome is too secure
@@ -1006,8 +1017,8 @@ $(document).ready(function () {
     scrollToPlugin();
   });
 
-  // for some unknown reason, this is broken
-/*
+//  // for some unknown reason, this is broken
+
     $("#expandAll").click(function (e) {
         $("#list-group > div").each(function (i, j) {
             // skip toggle for items with class names: "badge-changed" "badge-new" "badge-removed"
@@ -1026,7 +1037,7 @@ $(document).ready(function () {
             }
         });
     });
-*/
+
 
   // listener when the user picks a status filter
   $("body").on("change", ".nx-filter-status", function (e) {
@@ -1061,7 +1072,7 @@ $(document).ready(function () {
       .change();
   });
 
-// *** moved to diff.html ***
+// *** moved to osc-diff.js and osc-home.js ***
 //        $("body").on("click", "#metadata_table_risu_header", function (e) {
 //          $("#metadata_table_risu_body").toggle();
 //        });
@@ -1131,120 +1142,44 @@ $(document).ready(function () {
       $(this).html();
   });
 
-  $("body").on("click", "#toggle-baseline-btn", function (e) {
-    debugger;
-    console.log("toggle-baseline-btn");
-    toggleBaseline(jsonFile);
+  // HELP section
+  // Prevent the dropdown from closing when clicking inside the search input
+  $('#helpSearchInput').on('click', function(e) {
+      e.stopPropagation();
   });
 
-  $('#otherJsons.selectpicker').on('change', function() {
-    var selectedValue = $(this).val();
-    console.log('Selected Value:', selectedValue);
-    var reqUrl = `${[location.protocol, "//", location.host, location.pathname].join("")}${selectedValue}`;
-    // Here we load the data from risu.json with ajax and we populate the webpage
-    $.ajax({
-      url: reqUrl,
-      dataType: "json",
-      async: true,
-//      data: {
-//        "json": selectedValue,
-//      },
-      beforeSend: function () {
-        if (!selectedValue || selectedValue == '') return false; //cancel request
-        $("#report_table_risu_body").append(
-          '<tr id="loading"><td>Loading ' +
-            selectedValue +
-            '... <span class="fa fa-refresh"/></td></tr>'
-        );
-      },
-      success: function(data) {
-        // clean previous data
-//        $('#metadata_table_risu_body').empty();
-//        $('#profile_table_risu_body').empty();
-//        $('#report_table_risu_body').empty();
-        jsonFile = selectedValue;
-        buildPage(data); renderDiffTable(data);
-      }, // ajax success
-      error: function (jqXHR, exception) {
-        console.log(jqXHR);
-        if (jqXHR.status === 0) {
-          warnMessage("danger", "Unable to get JSON file. [0]");
-        } else if (jqXHR.status == 404) {
-          warnMessage("danger", `Requested JSON file '${selectedValue}' was not found.`);
-        } else if (jqXHR.status == 500) {
-          warnMessage("danger", "Internal Server Error [500].");
-        } else if (exception === "parsererror") {
-          warnMessage("danger", "Requested JSON parse failed.");
-        } else if (exception === "timeout") {
-          warnMessage("danger", "Time out error.");
-        } else if (exception === "abort") {
-          warnMessage("danger", "Ajax request aborted.");
-        } else {
-          warnMessage("danger", "Uncaught Error.\n" + jqXHR.responseText);
-        }
-      },
-      complete: function () {
-        var $loadingRow = $("#report_table_risu_body tr#loading");
-        $loadingRow.remove(); // Clean up UI regardless of success/error
-      }, // ajax complete
-    }); // ajax query
-  });
+  // Filter the help topics as the user types
+  $('#helpSearchInput').on('keyup', function() {
+      let searchTerm = $(this).val().toLowerCase();
+      let matchCount = 0;
 
-  // Here we load the data from risu.json with ajax and we populate the webpage
-  //if (!jsonFile || jsonFile == '') jsonFile='osc.json'; // cancel request
-  $.ajax({
-    url: `${jsonFile}`,  /*`?json=${jsonFile}`,*/
-    dataType: "json",
-    async: true,
-    beforeSend: function () {
-      if (!jsonFile || jsonFile == '' || jsonFile == 'osc.json') {
-        buildPage({}); renderDiffTable({});
-        return false;
-      } // cancel request
-      $("#report_table_risu_body").append(
-        '<tr id="loading"><td>Loading ' +
-          jsonFile +
-          '... <span class="fa fa-refresh"/></td></tr>'
-      );
-    },
-    success: function(data) {
-      buildPage(data); renderDiffTable(data);
-    }, // ajax success
-    error: function (jqXHR, exception) {
-      console.log(jqXHR);
-      if (jqXHR.status === 0) {
-        warnMessage("danger", "Unable to get JSON file. [0]");
-      } else if (jqXHR.status == 404) {
-        warnMessage("danger", `Requested JSON file '${jsonFile}' was not found.`);
-//        // FIXME infinite loop
-//        for (i = 0; i < jsonFilesList.length; ++i) {
-//          if (jsonFilesList[i] != jsonFile) {
-//            window.location.href =
-//              [
-//                location.protocol,
-//                "//",
-//                location.host,
-//                location.pathname,
-//              ].join("") +
-//              "?json=" +
-//              jsonFilesList[i];
-//          }
-//        }
-      } else if (jqXHR.status == 500) {
-        warnMessage("danger", "Internal Server Error [500].");
-      } else if (exception === "parsererror") {
-        warnMessage("danger", "Requested JSON parse failed.");
-      } else if (exception === "timeout") {
-        warnMessage("danger", "Time out error.");
-      } else if (exception === "abort") {
-        warnMessage("danger", "Ajax request aborted.");
+      // Loop through each help topic
+      $('.help-topic-item').each(function() {
+          let topicText = $(this).text().toLowerCase();
+
+          // If the text matches the search, show it. Otherwise, hide it.
+          if (topicText.indexOf(searchTerm) > -1) {
+              $(this).show();
+              matchCount++;
+          } else {
+              $(this).hide();
+          }
+      });
+
+      // Display the "No results found" message if nothing matches
+      if (matchCount === 0) {
+          $('#helpEmptyState').show();
       } else {
-        warnMessage("danger", "Uncaught Error.\n" + jqXHR.responseText);
+          $('#helpEmptyState').hide();
       }
-    }, // ajax error
-    complete: function () {
-      var $loadingRow = $("#report_table_risu_body tr#loading");
-      $loadingRow.remove(); // Clean up UI regardless of success/error
-    }, // ajax complete
-  }); // ajax query
+  });
+
+  // Clear the search input when the dropdown is closed
+  $('.navbar-utility.dropdown').on('hidden.bs.dropdown', function () {
+      $('#helpSearchInput').val('');
+      $('.help-topic-item').show();
+      $('#helpEmptyState').hide();
+  });
+  // HELP section end
+
 }); // doc ready

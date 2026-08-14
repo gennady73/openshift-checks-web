@@ -54,11 +54,17 @@
 
             <div class="toolbar-pf-action-right">
               <div class="form-group">
-                <div id="otherJsons" class="dropdown btn-group hidden">
-                  <button id="jsons" type="button" data-json="" class="btn btn-default dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"></button>
-
-                  <ul class="dropdown-menu dropdown-menu-right"></ul>
-                </div>
+<!--                <div id="otherJsons" class="dropdown btn-group hidden">-->
+<!--                  <button id="jsons" type="button" data-json="" class="btn btn-default dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"></button>-->
+<!--                  <ul class="dropdown-menu dropdown-menu-right"></ul>-->
+<!--                </div>-->
+                <select class="selectpicker form-control" id="otherJsons"
+                                title="Select check result"
+                                data-live-search="true"
+                                data-width="400px"
+                                data-size="10"
+                                data-error="The value is empty!" data-minlength="6" required >
+                </select>
 
                 <button id="categories-btn" type="button" class="btn btn-default" data-toggle="modal" data-target="#modal-categories" data-toggle="tooltip" data-placement="top" title="Select specific infrastructure components (e.g., storage, network) to include in the report.">
                   Categories

@@ -1,0 +1,54 @@
+<div class="modal fade" id="risuHelpModal" tabindex="-1" role="dialog" aria-labelledby="risuHelpModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal" aria-hidden="true">
+          <span class="pficon pficon-close"></span>
+        </button>
+        <h4 class="modal-title" id="risuHelpModalLabel">OpenShift Checks (Risu Framework) Reference</h4>
+      </div>
+      <div class="modal-body">
+        <p>This application is powered by the open-source Risu framework. Below are summaries and reference links for the upstream project.</p>
+
+        <hr>
+
+        <h4>Usage Documentation</h4>
+        <p>Risu is a framework to help with system configuration validation on either a live system or a sosreport snapshot of the filesystem. By executing specific plugins, it reports on system health status, actual problems, or potential issues that will reveal themselves if no preventive action is taken.</p>
+        <div class="form-group">
+            <div class="input-group">
+                <input type="text" class="form-control" value="https://github.com/risuorg/risu/blob/master/README.md" readonly>
+                <span class="input-group-btn">
+                    <a href="https://github.com/risuorg/risu/blob/master/README.md" target="_blank" class="btn btn-default">Open Link</a>
+                </span>
+            </div>
+        </div>
+
+        <h4 style="margin-top: 30px;">Plugin Development</h4>
+        <p>The framework is highly extensible, allowing plugins to be written in your language of choice. It supports generating JSON output for external processing or HTML visualization, and includes native support for running Ansible playbooks.</p>
+        <div class="form-group">
+            <div class="input-group">
+                <input type="text" class="form-control" value="https://github.com/risuorg/risu/tree/master/doc" readonly>
+                <span class="input-group-btn">
+                    <a href="https://github.com/risuorg/risu/tree/master/doc" target="_blank" class="btn btn-default">Open Link</a>
+                </span>
+            </div>
+        </div>
+
+        <h4 style="margin-top: 30px;">Contributing Guidelines</h4>
+        <p>Code contributions require using <code>pre-commit</code> hooks and validating changes via <code>tox</code>. When creating or updating plugins, developers must assign a specific execution priority (e.g., 900-999 for Maximum Criticality) based on the issue's blast radius, system stability impact, and recovery difficulty.</p>
+        <div class="form-group">
+            <div class="input-group">
+                <input type="text" class="form-control" value="https://github.com/risuorg/risu/blob/master/CONTRIBUTING.md" readonly>
+                <span class="input-group-btn">
+                    <a href="https://github.com/risuorg/risu/blob/master/CONTRIBUTING.md" target="_blank" class="btn btn-default">Open Link</a>
+                </span>
+            </div>
+        </div>
+
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>

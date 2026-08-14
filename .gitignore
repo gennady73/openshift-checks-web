@@ -175,7 +175,5 @@ logs/
 *.sqlite
 
 # the check results and diff results
-data/results/*.json
-data/results/*.html
-data/diffs/*.json
-data/diffs/*.html
+data/results/*
+data/diffs/*

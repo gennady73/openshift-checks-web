@@ -4,24 +4,24 @@ import  sys
 import os
 import modules.occode as occode
 
-app:Flask=None
+app:Flask|None = None
 
 editor_blueprint: Blueprint = Blueprint('editor', __name__, static_folder='static', template_folder='templates/editor')
 flaskcode_blueprint: Blueprint = occode.blueprint
 occode_blueprint: Blueprint = occode.blueprint
 
-def init_code_editor(app_flask: Flask):
+def init_code_editor(fapp: Flask):
     global app
-    app = app_flask
+    app = fapp
     # openshift-checks/checks-extended
-    app.config.from_object(occode.default_config)
-    app.config['FLASKCODE_APP_TITLE'] = 'OpenShift Checks'
-    app.config['FLASKCODE_EDITOR_THEME'] = 'vs'
-    app.config['FLASKCODE_RESOURCE_BASEPATH'] = os.path.abspath('../openshift-checks/checks-extended')
+    fapp.config.from_object(occode.default_config)
+    fapp.config['FLASKCODE_APP_TITLE'] = 'OpenShift Checks'
+    fapp.config['FLASKCODE_EDITOR_THEME'] = 'vs'
+    fapp.config['FLASKCODE_RESOURCE_BASEPATH'] = os.path.abspath('../openshift-checks/checks-extended')
     # flaskcode.blueprint.defaultLang = 'shell'
     # app.register_blueprint(flaskcode.blueprint, url_prefix='/flaskcode')
     # app.register_blueprint(editor_blueprint, url_prefix='/editor')
-    occode.config = app.config
+    occode.config = fapp.config
 
 # @flaskcode_blueprint.route('/flackcode', methods=['GET', 'POST'])
 # def flaskcode_home():
